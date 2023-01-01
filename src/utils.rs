@@ -11,7 +11,7 @@ pub struct Config {
     pub clash_config_root: String,
 }
 
-pub fn setup_default_config(path: &String) {
+pub fn setup_default_config(path: &str) {
     let default_config = Config {
         remote_clash_binary_url: String::from(""),
         remote_config_url: String::from(""),
@@ -22,13 +22,21 @@ pub fn setup_default_config(path: &String) {
     fs::write(path, config).unwrap();
 }
 
-pub fn parse_config(path: &String) -> Config {
+pub fn parse_config(path: &str) -> Config {
     let config = fs::read_to_string(path).unwrap();
     let config: Config = toml::from_str(&config).unwrap();
     config
 }
 
-pub fn download_file(url: &String, path: &String) {
+pub fn sudo_check(prefix: &str) {
+    // Check for sudo privilege and try to escalate if not
+    if sudo::check() != sudo::RunningAs::Root {
+        println!("{} Sudo required, enter password below", prefix.yellow());
+        sudo::escalate_if_needed().unwrap();
+    }
+}
+
+pub fn download_file(url: &str, path: &str) {
     println!(
         "{} Downloading from {}",
         "download:".blue(),
@@ -44,7 +52,17 @@ pub fn download_file(url: &String, path: &String) {
     );
 }
 
-pub fn extract_gzip(gzip_path: &String, filename: &String, prefix: &str) {
+pub fn move_file(from: &str, to: &str, prefix: &str) {
+    fs::rename(from, to).unwrap();
+    println!("{} Moved to {}", prefix.green(), to.underline().yellow());
+}
+
+pub fn delete_file(path: &str, prefix: &str) {
+    fs::remove_file(&path).unwrap();
+    println!("{} Removed {}", prefix.green(), path.underline().yellow());
+}
+
+pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) {
     let mut archive = GzDecoder::new(fs::File::open(gzip_path).unwrap());
     let mut file = fs::File::create(filename).unwrap();
     io::copy(&mut archive, &mut file).unwrap();
@@ -63,10 +81,7 @@ pub enum ClashrupConfigError {
     RemoteConfigUrlMissingError,
 }
 
-pub fn validate_clashrup_config(
-    path: &String,
-    prefix: &str,
-) -> Result<Config, ClashrupConfigError> {
+pub fn validate_clashrup_config(path: &str, prefix: &str) -> Result<Config, ClashrupConfigError> {
     // Create clashrup default config if not exists
     let config_path = Path::new(path);
     if !config_path.exists() {
@@ -88,4 +103,34 @@ pub fn validate_clashrup_config(
         return Err(ClashrupConfigError::RemoteConfigUrlMissingError);
     }
     return Ok(config);
+}
+
+/**
+ * Create a systemd service file for running clash
+ *
+ * Reference: https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service
+ */
+pub fn create_clash_service(clash_binary_path: &str, clash_config_path: &str, prefix: &str) {
+    let service = format!(
+        "[Unit]
+Description=Clash - A rule-based tunnel in Go.
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={clash_binary_path} -d {clash_config_path}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target",
+        clash_binary_path = clash_binary_path,
+        clash_config_path = clash_config_path
+    );
+    let service_path = "/etc/systemd/system/clash.service";
+    fs::write(service_path, service).unwrap();
+    println!(
+        "{} Created clash.service at {}",
+        prefix.green(),
+        service_path.underline().yellow()
+    );
 }
