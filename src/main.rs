@@ -2,6 +2,7 @@ mod utils;
 
 use clap::{Parser, Subcommand};
 use colored::*;
+use shellexpand::tilde;
 use systemctl;
 use utils::*;
 
@@ -9,39 +10,40 @@ use utils::*;
 #[command(author, about, version)]
 struct Args {
     /// Path to clashrup config file
-    #[clap(short, long, default_value = "clashrup.toml")]
+    #[clap(short, long, default_value = "~/.config/clashrup.toml")]
     clashrup_config: String,
-
     #[command(subcommand)]
     command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
 enum Commands {
-    #[command(about = "Setup clashrup by downloading the clash binary and remote config")]
+    #[command(about = "Setup clashrup by downloading clash binary and remote config")]
     Setup,
-
     #[command(about = "Update clash remote config file")]
     Update,
-
-    #[command(about = "Clash systemd status")]
+    #[command(about = "Check clash.service status with systemctl")]
     Status,
-
-    #[command(about = "Uninstall and remove clash")]
+    #[command(about = "Uninstall and remove clash and config")]
     Uninstall,
 }
 
 fn main() {
     let args = Args::parse();
     let prefix = "clashrup:";
+    let clashrup_config = tilde(&args.clashrup_config).to_string();
 
     // Initial setup and parse config file
-    let config: Config = match validate_clashrup_config(&args.clashrup_config, &prefix) {
+    let config: Config = match validate_clashrup_config(&clashrup_config, &prefix) {
         Ok(config) => config,
         Err(error) => {
             match error {
                 ClashrupConfigError::ConfigMissingError => {
-                    println!("{} Created default config, edit as needed", prefix.yellow());
+                    println!(
+                        "{} Created default config at {}, edit as needed",
+                        prefix.yellow(),
+                        clashrup_config.underline()
+                    );
                     println!("{} Run again to finish setup", prefix.yellow());
                 }
                 ClashrupConfigError::RemoteClashBinaryUrlMissingError => {
@@ -68,7 +70,8 @@ fn main() {
     let clash_config_path = String::from("config.yaml");
 
     let clash_target_binary_path = String::from("/usr/local/bin/clash");
-    let clash_target_config_path = String::from("~/.config/clash/config.yaml");
+    let clash_target_config_path =
+        tilde(&format!("{}/config.yaml", config.clash_config_root)).to_string();
 
     match &args.command {
         Some(Commands::Setup) => {
