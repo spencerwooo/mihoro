@@ -1,8 +1,15 @@
 [package]
 name = "clashrup"
+description = "Simple CLI to manage your clash service and configuration subscriptions."
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+clap = { version = "4.0.32", features = ["derive"] }
+colored = "2.0.0"
+serde = { version = "1.0.152", features = ["derive"] }
+toml = "0.5.10"
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+flate2 = "1.0"
