@@ -76,7 +76,7 @@ pub fn validate_clashrup_config(
 
     // Parse config file and validate if urls are defined
     println!(
-        "{} Reading config file {}",
+        "{} Reading config from {}",
         prefix.cyan(),
         path.underline().yellow()
     );
