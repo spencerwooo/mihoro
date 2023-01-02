@@ -7,6 +7,8 @@ Download, setup, update, and check logs. **No more, no less.** Systemd configura
 required. `clash.service` is created under user systemd by default. Friendly Python alternative and also where
 `clashrup` got its name - [clashup](https://github.com/felinae98/clashup).
 
+![clashrup setup and status](https://user-images.githubusercontent.com/32114380/210215197-e326ab4f-6b9e-40ee-9459-1ecededc869c.png)
+
 ## Installation
 
 Download prebuilt binary for Linux from [releases](https://github.com/spencerwooo/clashrup/releases/latest). Move under
