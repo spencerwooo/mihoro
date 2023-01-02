@@ -1,9 +1,11 @@
+mod systemctl;
 mod utils;
 
 use clap::{Parser, Subcommand};
 use colored::*;
 use shellexpand::tilde;
-use systemctl;
+use std::{fs, os::unix::prelude::PermissionsExt, process::Command};
+use systemctl::Systemctl;
 use utils::*;
 
 #[derive(Parser)]
@@ -20,10 +22,20 @@ struct Args {
 enum Commands {
     #[command(about = "Setup clashrup by downloading clash binary and remote config")]
     Setup,
-    #[command(about = "Update clash remote config file")]
+    #[command(about = "Update clash remote config and restart clash.service")]
     Update,
     #[command(about = "Check clash.service status with systemctl")]
     Status,
+    #[command(about = "Stop clash.service with systemctl")]
+    Stop,
+    #[command(about = "Restart clash.service with systemctl")]
+    Restart,
+    #[command(about = "Check clash.service logs with journalctl")]
+    Log,
+    #[command(about = "Output and copy proxy export shell commands")]
+    Proxy,
+    #[command(about = "Output and copy proxy unset shell commands")]
+    ProxyUnset,
     #[command(about = "Uninstall and remove clash and config")]
     Uninstall,
 }
@@ -70,6 +82,7 @@ fn main() {
     // let clash_config_path = String::from("config.yaml");
 
     let clash_target_binary_path = tilde(&format!("~/.local/bin/clash")).to_string();
+    let clash_target_config_root = tilde(&config.clash_config_root).to_string();
     let clash_target_config_path =
         tilde(&format!("{}/config.yaml", config.clash_config_root)).to_string();
     let clash_target_service_path =
@@ -77,42 +90,79 @@ fn main() {
 
     match &args.command {
         Some(Commands::Setup) => {
-            // Download both clash binary and remote clash config
+            // Download clash binary and set permission to executable
             download_file(&config.remote_clash_binary_url, &clash_gzipped_path);
             extract_gzip(&clash_gzipped_path, &clash_target_binary_path, prefix);
+            fs::set_permissions(&clash_target_binary_path, fs::Permissions::from_mode(0o755))
+                .unwrap();
+
+            // Download clash remote configuration
             download_file(&config.remote_config_url, &clash_target_config_path);
 
-            // Move clash binary to user local bin and config to clash default config directory
-            // move_file(&clash_binary_path, &clash_target_binary_path, prefix);
-            // move_file(&clash_config_path, &clash_target_config_path, prefix);
-
+            // Create clash.service systemd file
             create_clash_service(
                 &clash_target_binary_path,
-                &clash_target_binary_path,
+                &clash_target_config_root,
                 &clash_target_service_path,
                 prefix,
             );
-            systemctl::restart("clash.service").unwrap();
+
+            Systemctl::new().enable("clash.service").execute();
+            Systemctl::new().start("clash.service").execute();
         }
         Some(Commands::Update) => {
             // Download remote clash config
             download_file(&config.remote_config_url, &clash_target_config_path);
 
-            // Move clash config to clash default config directory
-            // move_file(&clash_config_path, &clash_target_config_path, prefix);
-
             // Restart clash systemd service
-            systemctl::restart("clash.service").unwrap();
+            Systemctl::new().restart("clash.service").execute();
+            println!("{} Restarted clash.service", prefix.green());
         }
         Some(Commands::Status) => {
-            systemctl::status("clash.service").unwrap();
+            Systemctl::new().status("clash.service").execute();
+        }
+        Some(Commands::Stop) => {
+            Systemctl::new().stop("clash.service").execute();
+        }
+        Some(Commands::Restart) => {
+            Systemctl::new().stop("clash.service").execute();
+        }
+        Some(Commands::Log) => {
+            Command::new("journalctl")
+                .arg("--user")
+                .arg("-u")
+                .arg("clash.service")
+                .arg("-n")
+                .arg("10")
+                .arg("-f")
+                .spawn()
+                .expect("failed to execute process")
+                .wait()
+                .unwrap();
+        }
+        Some(Commands::Proxy) => {
+            // TODO: read this from clash config.yaml
+            let hostname = "127.0.0.1";
+            let http_port = 7890;
+            let socks_port = 7891;
+            let proxy_cmd = format!("export https_proxy=http://{hostname}:{http_port} http_proxy=http://{hostname}:{http_port} all_proxy=socks5://{hostname}:{socks_port}", hostname=hostname, http_port=http_port, socks_port=socks_port);
+            println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
+        }
+        Some(Commands::ProxyUnset) => {
+            let proxy_unset = "unset https_proxy http_proxy all_proxy";
+            println!("{} Run ->\n    {}", prefix.blue(), proxy_unset.bold());
         }
         Some(Commands::Uninstall) => {
-            systemctl::stop("clash.service").unwrap();
+            Systemctl::new().stop("clash.service").execute();
+            Systemctl::new().disable("clash.service").execute();
 
             delete_file(&clash_target_service_path, prefix);
             delete_file(&clash_target_binary_path, prefix);
             delete_file(&clash_target_config_path, prefix);
+
+            Systemctl::new().daemon_reload().execute();
+            Systemctl::new().reset_failed().execute();
+            println!("{} Disabled and reloaded systemd services", prefix.green());
         }
         None => {
             println!("{} No command specified, --help for usage", prefix.yellow());
