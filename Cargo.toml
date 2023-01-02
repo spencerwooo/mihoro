@@ -11,8 +11,6 @@ clap = { version = "4.0.32", features = ["derive"] }
 colored = "2.0.0"
 serde = { version = "1.0.152", features = ["derive"] }
 toml = "0.5.10"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
+reqwest = { version = "0.11", features = ["blocking"] }
 flate2 = "1.0"
-# sudo = "0.6.0"
-systemctl = "0.1.9"
 shellexpand = "3.0.0"
