@@ -2,13 +2,15 @@
 
 > Simple CLI to manage your clash service and configuration subscriptions.
 
-Download, setup, update, and check logs. No more, no less. Systemd configuration is created with reference from
+Download, setup, update, and check logs. **No more, no less.** Systemd configuration is created with reference from
 [*Running Clash as a service*](https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service). No root privilege is
-required. `clash.service` is created under user systemd by default.
+required. `clash.service` is created under user systemd by default. Friendly Python alternative and also where
+`clashrup` got its name - [clashup](https://github.com/felinae98/clashup).
 
 ## Installation
 
-Download prebuilt binary for Linux from releases. Move under `/usr/local/bin` or any other directory in your `$PATH`.
+Download prebuilt binary for Linux from [releases](https://github.com/spencerwooo/clashrup/releases/latest). Move under
+`/usr/local/bin` (system-wide), `~/.local/bin` (user) or any other directory in your `$PATH`.
 
 Alternatively, clone the repo and install from source:
 

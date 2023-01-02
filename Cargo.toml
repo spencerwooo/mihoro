@@ -3,6 +3,13 @@ name = "clashrup"
 description = "Simple CLI to manage your clash service and configuration subscriptions."
 version = "0.1.0"
 edition = "2021"
+readme = "README.md"
+license = "MIT"
+authors = ["spencerwooo <spencer.woo@outlook.com>"]
+homepage = "https://github.com/spencerwooo/clashrup"
+repository = "https://github.com/spencerwooo/clashrup"
+keywords = ["cli", "clash", "network", "linux"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

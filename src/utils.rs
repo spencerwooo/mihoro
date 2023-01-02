@@ -54,6 +54,13 @@ pub fn delete_file(path: &str, prefix: &str) {
 }
 
 pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) {
+    // Create parent directory for extraction dest if not exists
+    let parent_dir = Path::new(filename).parent().unwrap();
+    if !parent_dir.exists() {
+        fs::create_dir_all(parent_dir).unwrap();
+    }
+
+    // Extract gzip file
     let mut archive = GzDecoder::new(fs::File::open(gzip_path).unwrap());
     let mut file = fs::File::create(filename).unwrap();
     io::copy(&mut archive, &mut file).unwrap();
