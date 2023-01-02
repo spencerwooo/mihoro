@@ -14,8 +14,8 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             name: clashrup-x86_64-unknown-linux-gnu.tar.gz
-          - target: i686-unknown-linux-gnu
-            name: clashrup-i686-unknown-linux-gnu.tar.gz
+#           - target: i686-unknown-linux-gnu
+#             name: clashrup-i686-unknown-linux-gnu.tar.gz
 
     steps:
       - uses: actions/checkout@master
