@@ -22,7 +22,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Build binaries
-        run: cargo build --release --locked --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Compress binaries
         run: |
