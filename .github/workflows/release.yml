@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            name: clashrup-x86_64-unknown-linux-gnu.tar.gz
+          - target: i686-unknown-linux-gnu
+            name: clashrup-i686-unknown-linux-gnu.tar.gz
+
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build binaries
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Compress binaries
+        run: |
+          cd target/release
+          tar -czvf ${{ matrix.name }} clashrup
+          cd -
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/${{ matrix.name }}
+          asset_name: ${{ matrix.name }}
+          tag: ${{ github.ref }}
