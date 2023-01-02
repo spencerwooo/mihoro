@@ -66,35 +66,40 @@ fn main() {
     };
 
     let clash_gzipped_path = String::from("clash.gz");
-    let clash_binary_path = String::from("clash");
-    let clash_config_path = String::from("config.yaml");
+    // let clash_binary_path = String::from("clash");
+    // let clash_config_path = String::from("config.yaml");
 
-    let clash_target_binary_path = String::from("/usr/local/bin/clash");
+    let clash_target_binary_path = tilde(&format!("~/.local/bin/clash")).to_string();
     let clash_target_config_path =
         tilde(&format!("{}/config.yaml", config.clash_config_root)).to_string();
+    let clash_target_service_path =
+        tilde(&format!("{}/clash.service", config.user_systemd_root)).to_string();
 
     match &args.command {
         Some(Commands::Setup) => {
-            sudo_check(prefix);
-
             // Download both clash binary and remote clash config
             download_file(&config.remote_clash_binary_url, &clash_gzipped_path);
-            extract_gzip(&clash_gzipped_path, &clash_binary_path, prefix);
-            download_file(&config.remote_config_url, &clash_config_path);
+            extract_gzip(&clash_gzipped_path, &clash_target_binary_path, prefix);
+            download_file(&config.remote_config_url, &clash_target_config_path);
 
             // Move clash binary to user local bin and config to clash default config directory
-            move_file(&clash_binary_path, &clash_target_binary_path, prefix);
-            move_file(&clash_config_path, &clash_target_config_path, prefix);
+            // move_file(&clash_binary_path, &clash_target_binary_path, prefix);
+            // move_file(&clash_config_path, &clash_target_config_path, prefix);
 
-            create_clash_service(&clash_target_binary_path, &clash_target_binary_path, prefix);
+            create_clash_service(
+                &clash_target_binary_path,
+                &clash_target_binary_path,
+                &clash_target_service_path,
+                prefix,
+            );
             systemctl::restart("clash.service").unwrap();
         }
         Some(Commands::Update) => {
             // Download remote clash config
-            download_file(&config.remote_config_url, &clash_config_path);
+            download_file(&config.remote_config_url, &clash_target_config_path);
 
             // Move clash config to clash default config directory
-            move_file(&clash_config_path, &clash_target_config_path, prefix);
+            // move_file(&clash_config_path, &clash_target_config_path, prefix);
 
             // Restart clash systemd service
             systemctl::restart("clash.service").unwrap();
@@ -103,11 +108,9 @@ fn main() {
             systemctl::status("clash.service").unwrap();
         }
         Some(Commands::Uninstall) => {
-            sudo_check(prefix);
-
             systemctl::stop("clash.service").unwrap();
 
-            delete_file("/etc/systemd/system/clash.service", prefix);
+            delete_file(&clash_target_service_path, prefix);
             delete_file(&clash_target_binary_path, prefix);
             delete_file(&clash_target_config_path, prefix);
         }

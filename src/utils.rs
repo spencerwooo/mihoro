@@ -9,14 +9,15 @@ pub struct Config {
     pub remote_clash_binary_url: String,
     pub remote_config_url: String,
     pub clash_config_root: String,
+    pub user_systemd_root: String,
 }
 
 pub fn setup_default_config(path: &str) {
     let default_config = Config {
         remote_clash_binary_url: String::from(""),
         remote_config_url: String::from(""),
-        // Reference to clash config: https://github.com/Dreamacro/clash/wiki/configuration
         clash_config_root: String::from("~/.config/clash"),
+        user_systemd_root: String::from("~/.config/systemd/user"),
     };
     let config = toml::to_string(&default_config).unwrap();
     fs::write(path, config).unwrap();
@@ -28,13 +29,13 @@ pub fn parse_config(path: &str) -> Config {
     config
 }
 
-pub fn sudo_check(prefix: &str) {
-    // Check for sudo privilege and try to escalate if not
-    if sudo::check() != sudo::RunningAs::Root {
-        println!("{} Sudo required, enter password below", prefix.yellow());
-        sudo::escalate_if_needed().unwrap();
-    }
-}
+// pub fn sudo_check(prefix: &str) {
+//     // Check for sudo privilege and try to escalate if not
+//     if sudo::check() != sudo::RunningAs::Root {
+//         println!("{} Sudo required, enter password below", prefix.yellow());
+//         sudo::escalate_if_needed().unwrap();
+//     }
+// }
 
 pub fn download_file(url: &str, path: &str) {
     println!(
@@ -52,10 +53,10 @@ pub fn download_file(url: &str, path: &str) {
     );
 }
 
-pub fn move_file(from: &str, to: &str, prefix: &str) {
-    fs::rename(from, to).unwrap();
-    println!("{} Moved to {}", prefix.green(), to.underline().yellow());
-}
+// pub fn move_file(from: &str, to: &str, prefix: &str) {
+//     fs::rename(from, to).unwrap();
+//     println!("{} Moved to {}", prefix.green(), to.underline().yellow());
+// }
 
 pub fn delete_file(path: &str, prefix: &str) {
     fs::remove_file(&path).unwrap();
@@ -110,7 +111,12 @@ pub fn validate_clashrup_config(path: &str, prefix: &str) -> Result<Config, Clas
  *
  * Reference: https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service
  */
-pub fn create_clash_service(clash_binary_path: &str, clash_config_path: &str, prefix: &str) {
+pub fn create_clash_service(
+    clash_binary_path: &str,
+    clash_config_path: &str,
+    clash_service_path: &str,
+    prefix: &str,
+) {
     let service = format!(
         "[Unit]
 Description=Clash - A rule-based tunnel in Go.
@@ -126,11 +132,10 @@ WantedBy=multi-user.target",
         clash_binary_path = clash_binary_path,
         clash_config_path = clash_config_path
     );
-    let service_path = "/etc/systemd/system/clash.service";
-    fs::write(service_path, service).unwrap();
+    fs::write(clash_service_path, service).unwrap();
     println!(
         "{} Created clash.service at {}",
         prefix.green(),
-        service_path.underline().yellow()
+        clash_service_path.underline().yellow()
     );
 }
