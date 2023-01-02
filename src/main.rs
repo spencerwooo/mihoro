@@ -77,9 +77,7 @@ fn main() {
         }
     };
 
-    let clash_gzipped_path = String::from("clash.gz");
-    // let clash_binary_path = String::from("clash");
-    // let clash_config_path = String::from("config.yaml");
+    let clash_gzipped_path = "clash.tar.gz";
 
     let clash_target_binary_path = tilde(&format!("~/.local/bin/clash")).to_string();
     let clash_target_config_root = tilde(&config.clash_config_root).to_string();
@@ -123,9 +121,11 @@ fn main() {
         }
         Some(Commands::Stop) => {
             Systemctl::new().stop("clash.service").execute();
+            println!("{} Stopped clash.service", prefix.green());
         }
         Some(Commands::Restart) => {
-            Systemctl::new().stop("clash.service").execute();
+            Systemctl::new().restart("clash.service").execute();
+            println!("{} Restarted clash.service", prefix.green());
         }
         Some(Commands::Log) => {
             Command::new("journalctl")

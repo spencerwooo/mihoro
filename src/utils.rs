@@ -110,11 +110,12 @@ pub fn validate_clashrup_config(path: &str, prefix: &str) -> Result<Config, Clas
     return Ok(config);
 }
 
-/**
- * Create a systemd service file for running clash
- *
- * Reference: https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service
- */
+/// Create a systemd service file for running clash as a service.
+///
+/// By default, user systemd services are created under `~/.config/systemd/user/clash.service` and invoked with
+/// `systemctl --user start clash.service`. Directory is created if not present.
+///
+/// Reference: https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service
 pub fn create_clash_service(
     clash_binary_path: &str,
     clash_config_root: &str,
@@ -128,13 +129,13 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart={clash_binary_path} -d {clash_config_path}
+ExecStart={clash_binary_path} -d {clash_config_root}
 Restart=always
 
 [Install]
 WantedBy=multi-user.target",
         clash_binary_path = clash_binary_path,
-        clash_config_path = clash_config_root
+        clash_config_root = clash_config_root
     );
 
     // Create clash service directory if not exists
