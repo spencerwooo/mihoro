@@ -26,7 +26,7 @@ jobs:
 
       - name: Compress binaries
         run: |
-          cd target/release
+          cd target/${{ matrix.target }}/release
           tar -czvf ${{ matrix.name }} clashrup
           cd -
 
@@ -34,6 +34,6 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/${{ matrix.name }}
+          file: target/${{ matrix.target }}/${{ matrix.name }}
           asset_name: ${{ matrix.name }}
           tag: ${{ github.ref }}
