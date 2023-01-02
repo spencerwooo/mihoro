@@ -30,6 +30,13 @@ pub fn parse_config(path: &str) -> Config {
 }
 
 pub fn download_file(url: &str, path: &str) {
+    // Create parent directory for download dest if not exists
+    let parent_dir = Path::new(path).parent().unwrap();
+    if !parent_dir.exists() {
+        fs::create_dir_all(parent_dir).unwrap();
+    }
+
+    // Download file
     println!(
         "{} Downloading from {}",
         "download:".blue(),
