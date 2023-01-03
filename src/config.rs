@@ -121,7 +121,6 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
         prefix.cyan(),
         path.underline().yellow()
     );
-
     match Config::setup_from(path) {
         Ok(config) => {
             if config.remote_clash_binary_url.is_empty() {
@@ -130,6 +129,10 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
             }
             if config.remote_config_url.is_empty() {
                 println!("{} `remote_config_url` undefined", "error:".red());
+                return Err(ConfigError::ParseError);
+            }
+            if config.remote_mmdb_url.is_empty() {
+                println!("{} `remote_mmdb_url` undefined", "error:".red());
                 return Err(ConfigError::ParseError);
             }
             return Ok(config);
