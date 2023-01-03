@@ -28,7 +28,7 @@ jobs:
       - name: Build binaries
         run: |
           cargo install cross
-          cross run --target ${{ matrix.target }}
+          cross build --release --target ${{ matrix.target }}
 
       - name: Strip binaries
         run: strip target/${{ matrix.target }}/release/clashrup
