@@ -81,7 +81,7 @@ fn main() {
 
     let clash_gzipped_path = "clash.tar.gz";
 
-    let clash_target_binary_path = tilde(&format!("~/.local/bin/clash")).to_string();
+    let clash_target_binary_path = tilde(&config.clash_binary_path).to_string();
     let clash_target_config_root = tilde(&config.clash_config_root).to_string();
     let clash_target_config_path =
         tilde(&format!("{}/config.yaml", config.clash_config_root)).to_string();

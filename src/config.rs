@@ -7,6 +7,7 @@ use toml;
 pub struct Config {
     pub remote_clash_binary_url: String,
     pub remote_config_url: String,
+    pub clash_binary_path: String,
     pub clash_config_root: String,
     pub user_systemd_root: String,
 }
@@ -16,6 +17,7 @@ impl Config {
         Config {
             remote_clash_binary_url: String::from(""),
             remote_config_url: String::from(""),
+            clash_binary_path: String::from("~/.local/bin/clash"),
             clash_config_root: String::from("~/.config/clash"),
             user_systemd_root: String::from("~/.config/systemd/user"),
         }
