@@ -14,15 +14,22 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             name: clashrup-x86_64-unknown-linux-gnu.tar.gz
-#           - target: i686-unknown-linux-gnu
-#             name: clashrup-i686-unknown-linux-gnu.tar.gz
+          - target: x86_64-unknown-linux-musl
+            name: clashrup-x86_64-unknown-linux-musl.tar.gz
+          - target: i686-unknown-linux-gnu
+            name: clashrup-i686-unknown-linux-gnu.tar.gz
 
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
 
       - name: Build binaries
         run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binaries
+        run: strip target/${{ matrix.target }}/release/clashrup
 
       - name: Compress binaries
         run: |
