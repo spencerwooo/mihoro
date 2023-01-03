@@ -69,6 +69,8 @@ fn main() {
     let clash_target_config_root = tilde(&config.clash_config_root).to_string();
     let clash_target_config_path =
         tilde(&format!("{}/config.yaml", config.clash_config_root)).to_string();
+    let clash_target_mmdb_path =
+        tilde(&format!("{}/Country.mmdb", config.clash_config_root)).to_string();
     let clash_target_service_path =
         tilde(&format!("{}/clash.service", config.user_systemd_root)).to_string();
 
@@ -81,8 +83,9 @@ fn main() {
             let executable = fs::Permissions::from_mode(0o755);
             fs::set_permissions(&clash_target_binary_path, executable).unwrap();
 
-            // Download clash remote configuration
+            // Download clash remote configuration and mmdb
             download_file(&config.remote_config_url, &clash_target_config_path);
+            download_file(&config.remote_mmdb_url, &clash_target_mmdb_path);
 
             // Create clash.service systemd file
             create_clash_service(
@@ -96,8 +99,9 @@ fn main() {
             Systemctl::new().start("clash.service").execute();
         }
         Some(Commands::Update) => {
-            // Download remote clash config
+            // Download remote clash config and mmdb
             download_file(&config.remote_config_url, &clash_target_config_path);
+            download_file(&config.remote_mmdb_url, &clash_target_mmdb_path);
 
             // Restart clash systemd service
             Systemctl::new().restart("clash.service").execute();

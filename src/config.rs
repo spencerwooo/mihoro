@@ -6,13 +6,47 @@ use serde::Deserialize;
 use serde::Serialize;
 use toml;
 
+/// `clashrup` configurations
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub remote_clash_binary_url: String,
     pub remote_config_url: String,
+    pub remote_mmdb_url: String,
     pub clash_binary_path: String,
     pub clash_config_root: String,
     pub user_systemd_root: String,
+    pub clash_config: ClashConfig,
+}
+
+/// `clash` configurations (partial)
+///
+/// Referenced from https://github.com/Dreamacro/clash/wiki/configuration
+#[derive(Serialize, Deserialize)]
+pub struct ClashConfig {
+    port: u16,
+    socks_port: u16,
+    allow_lan: bool,
+    mode: ClashMode,
+    log_level: ClashLogLevel,
+    ipv6: bool,
+    external_controller: String,
+    external_ui: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ClashMode {
+    Global,
+    Rule,
+    Direct,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ClashLogLevel {
+    Silent,
+    Error,
+    Warning,
+    Info,
+    Debug,
 }
 
 impl Config {
@@ -20,9 +54,22 @@ impl Config {
         Config {
             remote_clash_binary_url: String::from(""),
             remote_config_url: String::from(""),
+            remote_mmdb_url: String::from(
+                "https://cdn.jsdelivr.net/gh/Dreamacro/maxmind-geoip@release/Country.mmdb",
+            ),
             clash_binary_path: String::from("~/.local/bin/clash"),
             clash_config_root: String::from("~/.config/clash"),
             user_systemd_root: String::from("~/.config/systemd/user"),
+            clash_config: ClashConfig {
+                port: 7890,
+                socks_port: 7891,
+                allow_lan: false,
+                mode: ClashMode::Rule,
+                log_level: ClashLogLevel::Info,
+                ipv6: false,
+                external_controller: String::from("127.0.0.1:9090"),
+                external_ui: String::from("folder"),
+            },
         }
     }
 
