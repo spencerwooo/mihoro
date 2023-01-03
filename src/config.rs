@@ -7,7 +7,7 @@ use serde::Serialize;
 use toml;
 
 /// `clashrup` configurations
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub remote_clash_binary_url: String,
     pub remote_config_url: String,
@@ -21,26 +21,27 @@ pub struct Config {
 /// `clash` configurations (partial)
 ///
 /// Referenced from https://github.com/Dreamacro/clash/wiki/configuration
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ClashConfig {
-    port: u16,
-    socks_port: u16,
-    allow_lan: bool,
-    mode: ClashMode,
-    log_level: ClashLogLevel,
-    ipv6: bool,
-    external_controller: String,
-    external_ui: String,
+    port: Option<u16>,
+    socks_port: Option<u16>,
+    allow_lan: Option<bool>,
+    bind_address: Option<String>,
+    mode: Option<ClashMode>,
+    log_level: Option<ClashLogLevel>,
+    ipv6: Option<bool>,
+    external_controller: Option<String>,
+    external_ui: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum ClashMode {
     Global,
     Rule,
     Direct,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum ClashLogLevel {
     Silent,
     Error,
@@ -61,14 +62,15 @@ impl Config {
             clash_config_root: String::from("~/.config/clash"),
             user_systemd_root: String::from("~/.config/systemd/user"),
             clash_config: ClashConfig {
-                port: 7890,
-                socks_port: 7891,
-                allow_lan: false,
-                mode: ClashMode::Rule,
-                log_level: ClashLogLevel::Info,
-                ipv6: false,
-                external_controller: String::from("127.0.0.1:9090"),
-                external_ui: String::from("folder"),
+                port: Some(7890),
+                socks_port: Some(7891),
+                allow_lan: Some(false),
+                bind_address: Some(String::from("*")),
+                mode: Some(ClashMode::Rule),
+                log_level: Some(ClashLogLevel::Info),
+                ipv6: Some(false),
+                external_controller: Some(String::from("127.0.0.1:9090")),
+                external_ui: None,
             },
         }
     }
@@ -106,11 +108,10 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
     if !config_path.exists() {
         Config::new().write(config_path);
         println!(
-            "{} Created default config at {}, edit as needed",
-            prefix.yellow(),
-            path.underline()
+            "{prefix} Created default config at {path}, edit as needed\n{prefix} Run again to finish setup",
+            prefix = prefix.yellow(),
+            path = path.underline()
         );
-        println!("{} Run again to finish setup", prefix.yellow());
         return Err(ConfigError::FileMissing);
     }
 
