@@ -1,8 +1,10 @@
+mod config;
 mod systemctl;
 mod utils;
 
 use clap::{Parser, Subcommand};
 use colored::*;
+use config::*;
 use shellexpand::tilde;
 use std::{fs, os::unix::prelude::PermissionsExt, process::Command};
 use systemctl::Systemctl;
