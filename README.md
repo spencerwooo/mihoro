@@ -1,6 +1,6 @@
 # clashrup
 
-> Simple CLI to manage your clash service and configuration subscriptions.
+> Simple CLI to manage your systemd clash.service and config subscriptions on Linux.
 
 Download, setup, update, and check logs. **No more, no less.** Systemd configuration is created with reference from
 [*Running Clash as a service*](https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service). No root privilege is
@@ -23,7 +23,7 @@ cargo install --path .
 ## Usage
 
 ```
-Simple CLI to manage your clash service and configuration subscriptions.
+Simple CLI to manage your systemd clash.service and config subscriptions on Linux.
 
 Usage: clashrup [OPTIONS] [COMMAND]
 
