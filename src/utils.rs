@@ -1,6 +1,9 @@
-use colored::*;
+use std::fs;
+use std::io;
+use std::path::Path;
+
+use colored::Colorize;
 use flate2::read::GzDecoder;
-use std::{fs, io, path::Path};
 
 pub fn download_file(url: &str, path: &str) {
     // Create parent directory for download dest if not exists

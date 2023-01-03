@@ -2,13 +2,22 @@ mod config;
 mod systemctl;
 mod utils;
 
-use clap::{Parser, Subcommand};
-use colored::*;
-use config::*;
+use std::fs;
+use std::os::unix::prelude::PermissionsExt;
+use std::process::Command;
+
+use clap::Parser;
+use clap::Subcommand;
+use colored::Colorize;
 use shellexpand::tilde;
-use std::{fs, os::unix::prelude::PermissionsExt, process::Command};
+
+use config::parse_config;
+use config::Config;
 use systemctl::Systemctl;
-use utils::*;
+use utils::create_clash_service;
+use utils::delete_file;
+use utils::download_file;
+use utils::extract_gzip;
 
 #[derive(Parser)]
 #[command(author, about, version)]
@@ -45,40 +54,15 @@ enum Commands {
 fn main() {
     let args = Args::parse();
     let prefix = "clashrup:";
-    let clashrup_config = tilde(&args.clashrup_config).to_string();
+    let config_path = tilde(&args.clashrup_config).to_string();
 
     // Initial setup and parse config file
-    let config: Config = match validate_clashrup_config(&clashrup_config, &prefix) {
+    let config: Config = match parse_config(&config_path, &prefix) {
         Ok(config) => config,
-        Err(error) => {
-            match error {
-                ClashrupConfigError::ConfigMissingError => {
-                    println!(
-                        "{} Created default config at {}, edit as needed",
-                        prefix.yellow(),
-                        clashrup_config.underline()
-                    );
-                    println!("{} Run again to finish setup", prefix.yellow());
-                }
-                ClashrupConfigError::RemoteClashBinaryUrlMissingError => {
-                    println!(
-                        "{} Missing {}",
-                        "error:".red(),
-                        "remote_clash_binary_url".underline()
-                    );
-                }
-                ClashrupConfigError::RemoteConfigUrlMissingError => {
-                    println!(
-                        "{} Missing {}",
-                        "error:".red(),
-                        "remote_config_url".underline()
-                    );
-                }
-            }
-            return;
-        }
+        Err(_) => return,
     };
 
+    // Clash related paths and target directories
     let clash_gzipped_path = "clash.tar.gz";
 
     let clash_target_binary_path = tilde(&config.clash_binary_path).to_string();
@@ -93,8 +77,9 @@ fn main() {
             // Download clash binary and set permission to executable
             download_file(&config.remote_clash_binary_url, &clash_gzipped_path);
             extract_gzip(&clash_gzipped_path, &clash_target_binary_path, prefix);
-            fs::set_permissions(&clash_target_binary_path, fs::Permissions::from_mode(0o755))
-                .unwrap();
+
+            let executable = fs::Permissions::from_mode(0o755);
+            fs::set_permissions(&clash_target_binary_path, executable).unwrap();
 
             // Download clash remote configuration
             download_file(&config.remote_config_url, &clash_target_config_path);
@@ -147,7 +132,14 @@ fn main() {
             let hostname = "127.0.0.1";
             let http_port = 7890;
             let socks_port = 7891;
-            let proxy_cmd = format!("export https_proxy=http://{hostname}:{http_port} http_proxy=http://{hostname}:{http_port} all_proxy=socks5://{hostname}:{socks_port}", hostname=hostname, http_port=http_port, socks_port=socks_port);
+            let proxy_cmd = format!(
+                "export https_proxy=http://{hostname}:{http_port} \
+                 http_proxy=http://{hostname}:{http_port} \
+                 all_proxy=socks5://{hostname}:{socks_port}",
+                hostname = hostname,
+                http_port = http_port,
+                socks_port = socks_port
+            );
             println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
         }
         Some(Commands::ProxyUnset) => {
