@@ -1,18 +1,27 @@
 # clashrup
 
-> Simple CLI to manage your systemd clash.service and config subscriptions on Linux.
+[![Release](https://github.com/spencerwooo/clashrup/actions/workflows/release.yml/badge.svg)](https://github.com/spencerwooo/clashrup/actions/workflows/release.yml)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/spencerwooo/clashrup)](https://github.com/spencerwooo/clashrup/releases/latest)
 
-Download, setup, update, and check logs. **No more, no less.** Systemd configuration is created with reference from
-[*Running Clash as a service*](https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service). No root privilege is
-required. `clash.service` is created under user systemd by default. Friendly Python alternative and also where
-`clashrup` got its name - [clashup](https://github.com/felinae98/clashup).
+Simple CLI to manage your systemd `clash.service` and config subscriptions on Linux.
 
-![clashrup setup and status](https://user-images.githubusercontent.com/32114380/210215197-e326ab4f-6b9e-40ee-9459-1ecededc869c.png)
+- Setup, update, apply overrides, and manage via `systemctl`. **No more, no less.**
+- Systemd configuration is created with reference from [*Running Clash as a service*](https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service).
+- No root privilege is required. `clash.service` is created under user systemd by default.
+- `clashrup` got its name from [clashup](https://github.com/felinae98/clashup), a friendly Python alternative.
+
+![clashrup setup, update, apply and status](https://user-images.githubusercontent.com/32114380/210590025-35ac3977-60ab-452c-a0f1-7c3d5707b0e1.png)
 
 ## Installation
 
 Download prebuilt binary for Linux from [releases](https://github.com/spencerwooo/clashrup/releases/latest). Move under
-`/usr/local/bin` (system-wide), `~/.local/bin` (user) or any other directory in your `$PATH`.
+`/usr/local/bin` (system-wide), `~/.local/bin` (user) or any other directory in your `$PATH`. Example:
+
+```bash
+wget https://github.com/spencerwooo/clashrup/releases/download/{VERSION}/clashrup-{TARGET_ARCH}.tar.gz
+tar xvzf clashrup-{TARGET_ARCH}.tar.gz
+mv clashrup ~/.local/bin/clashrup
+```
 
 Alternatively, clone the repo and install from source:
 
@@ -73,12 +82,19 @@ mode = "rule"
 log_level = "info"
 ipv6 = false
 external_controller = "127.0.0.1:9090"
-# external-ui: folder
+# external-ui = "folder"
 ```
 
-Field `clash_config` holds a subset of supported config overrides for clash's `config.yaml`. Inside, `port`,
-`socks_port`, `mode`, and `log_level` are required. Other fields are optional. For a full list of configurable clash
-`config.yaml` fields, see [clash - Configuration](https://github.com/Dreamacro/clash/wiki/configuration).
+where,
+
+- Field `remote_clash_binary_url` should point to a downloadable gzipped `clash` binary URL 
+  ([example](https://github.com/MetaCubeX/Clash.Meta/releases/download/v1.14.0/Clash.Meta-linux-amd64-v1.14.0.gz)).
+- Field `remote_config_url` should point to your subscription provider's config URL.
+- Field `clash_config` holds a subset of supported config overrides for clash's `config.yaml`. Inside, `port`,
+  `socks_port`, `mode`, and `log_level` are required. Other fields are optional. For a full list of configurable clash
+  `config.yaml` fields, see [clash - Configuration](https://github.com/Dreamacro/clash/wiki/configuration).
+
+Other fields should be self-explanatory.
 
 ## License
 
