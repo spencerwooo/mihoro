@@ -116,25 +116,22 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
     }
 
     // Parse config file and validate if urls are defined
-    println!(
-        "{} Reading config from {}",
-        prefix.cyan(),
-        path.underline().yellow()
-    );
+    println!("{} Reading config from {}", prefix.cyan(), path.underline());
     match Config::setup_from(path) {
         Ok(config) => {
-            if config.remote_clash_binary_url.is_empty() {
-                println!("{} `remote_clash_binary_url` undefined", "error:".red());
-                return Err(ConfigError::ParseError);
+            let required_urls = [
+                ("remote_clash_binary_url", &config.remote_clash_binary_url),
+                ("remote_config_url", &config.remote_config_url),
+                ("remote_mmdb_url", &config.remote_mmdb_url),
+            ];
+
+            for (field, value) in required_urls.iter() {
+                if value.is_empty() {
+                    println!("{} `{}` undefined", "error:".red(), field);
+                    return Err(ConfigError::ParseError);
+                }
             }
-            if config.remote_config_url.is_empty() {
-                println!("{} `remote_config_url` undefined", "error:".red());
-                return Err(ConfigError::ParseError);
-            }
-            if config.remote_mmdb_url.is_empty() {
-                println!("{} `remote_mmdb_url` undefined", "error:".red());
-                return Err(ConfigError::ParseError);
-            }
+
             return Ok(config);
         }
         Err(error) => {
