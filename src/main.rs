@@ -9,6 +9,7 @@ use std::process::Command;
 use clap::Parser;
 use clap::Subcommand;
 use colored::Colorize;
+use local_ip_address::local_ip;
 use shellexpand::tilde;
 
 use config::apply_clash_override;
@@ -48,12 +49,23 @@ enum Commands {
     Restart,
     #[command(about = "Check clash.service logs with journalctl")]
     Log,
-    #[command(about = "Output and copy proxy export shell commands")]
-    Proxy,
-    #[command(about = "Output and copy proxy unset shell commands")]
-    ProxyUnset,
+    #[command(about = "Proxy commands")]
+    Proxy {
+        #[command(subcommand)]
+        proxy: Option<ProxyCommands>,
+    },
     #[command(about = "Uninstall and remove clash and config")]
     Uninstall,
+}
+
+#[derive(Subcommand)]
+enum ProxyCommands {
+    #[command(about = "Output and copy proxy export shell commands")]
+    Export,
+    #[command(about = "Output and copy proxy export shell commands for LAN access")]
+    ExportLan,
+    #[command(about = "Output and copy proxy unset shell commands")]
+    Unset,
 }
 
 fn main() {
@@ -156,25 +168,48 @@ fn main() {
                 .wait()
                 .unwrap();
         }
-        Some(Commands::Proxy) => {
-            // TODO: read this from clash config.yaml
-            let hostname = "127.0.0.1";
-            let http_port = config.clash_config.port;
-            let socks_port = config.clash_config.socks_port;
-            let proxy_cmd = format!(
-                "export https_proxy=http://{hostname}:{http_port} \
-                 http_proxy=http://{hostname}:{http_port} \
-                 all_proxy=socks5://{hostname}:{socks_port}",
-                hostname = hostname,
-                http_port = http_port,
-                socks_port = socks_port
-            );
-            println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
-        }
-        Some(Commands::ProxyUnset) => {
-            let proxy_unset = "unset https_proxy http_proxy all_proxy";
-            println!("{} Run ->\n    {}", prefix.blue(), proxy_unset.bold());
-        }
+        Some(Commands::Proxy { proxy }) => match proxy {
+            Some(ProxyCommands::Export) => {
+                let proxy_cmd = format!(
+                    "export https_proxy=http://{hostname}:{http_port} \
+                     http_proxy=http://{hostname}:{http_port} \
+                     all_proxy=socks5://{hostname}:{socks_port}",
+                    hostname = "127.0.0.1",
+                    http_port = config.clash_config.port,
+                    socks_port = config.clash_config.socks_port
+                );
+                println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
+            }
+            Some(ProxyCommands::ExportLan) => {
+                if !config.clash_config.allow_lan.unwrap_or(false) {
+                    println!(
+                        "{} `allow_lan` is false, edit {} and `clashrup apply` to enable",
+                        prefix.red(),
+                        config_path.underline().yellow()
+                    );
+                    return;
+                }
+
+                let host = local_ip().unwrap();
+                let proxy_cmd = format!(
+                    "export https_proxy=http://{hostname}:{http_port} \
+                     http_proxy=http://{hostname}:{http_port} \
+                     all_proxy=socks5://{hostname}:{socks_port}",
+                    hostname = host,
+                    http_port = config.clash_config.port,
+                    socks_port = config.clash_config.socks_port
+                );
+                println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
+            }
+            Some(ProxyCommands::Unset) => {
+                let proxy_cmd = format!("unset https_proxy http_proxy all_proxy");
+                println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
+            }
+            None => {
+                // Should not reach here
+                println!("{} No proxy command provided", prefix.red());
+            }
+        },
         Some(Commands::Uninstall) => {
             Systemctl::new().stop("clash.service").execute();
             Systemctl::new().disable("clash.service").execute();

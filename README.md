@@ -74,7 +74,12 @@ mode = "rule"
 log_level = "info"
 ipv6 = false
 external_controller = "127.0.0.1:9090"
+# external-ui: folder
 ```
+
+Field `clash_config` holds a subset of supported config overrides for clash's `config.yaml`. Inside, `port`,
+`socks_port`, `mode`, and `log_level` are required. Other fields are optional. For a full list of configurable clash
+`config.yaml` fields, see [clash - Configuration](https://github.com/Dreamacro/clash/wiki/configuration).
 
 ## License
 
