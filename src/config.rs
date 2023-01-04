@@ -6,13 +6,48 @@ use serde::Deserialize;
 use serde::Serialize;
 use toml;
 
-#[derive(Serialize, Deserialize)]
+/// `clashrup` configurations
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub remote_clash_binary_url: String,
     pub remote_config_url: String,
+    pub remote_mmdb_url: String,
     pub clash_binary_path: String,
     pub clash_config_root: String,
     pub user_systemd_root: String,
+    pub clash_config: ClashConfig,
+}
+
+/// `clash` configurations (partial)
+///
+/// Referenced from https://github.com/Dreamacro/clash/wiki/configuration
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ClashConfig {
+    port: Option<u16>,
+    socks_port: Option<u16>,
+    allow_lan: Option<bool>,
+    bind_address: Option<String>,
+    mode: Option<ClashMode>,
+    log_level: Option<ClashLogLevel>,
+    ipv6: Option<bool>,
+    external_controller: Option<String>,
+    external_ui: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ClashMode {
+    Global,
+    Rule,
+    Direct,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum ClashLogLevel {
+    Silent,
+    Error,
+    Warning,
+    Info,
+    Debug,
 }
 
 impl Config {
@@ -20,9 +55,23 @@ impl Config {
         Config {
             remote_clash_binary_url: String::from(""),
             remote_config_url: String::from(""),
+            remote_mmdb_url: String::from(
+                "https://cdn.jsdelivr.net/gh/Dreamacro/maxmind-geoip@release/Country.mmdb",
+            ),
             clash_binary_path: String::from("~/.local/bin/clash"),
             clash_config_root: String::from("~/.config/clash"),
             user_systemd_root: String::from("~/.config/systemd/user"),
+            clash_config: ClashConfig {
+                port: Some(7890),
+                socks_port: Some(7891),
+                allow_lan: Some(false),
+                bind_address: Some(String::from("*")),
+                mode: Some(ClashMode::Rule),
+                log_level: Some(ClashLogLevel::Info),
+                ipv6: Some(false),
+                external_controller: Some(String::from("127.0.0.1:9090")),
+                external_ui: None,
+            },
         }
     }
 
@@ -59,31 +108,30 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
     if !config_path.exists() {
         Config::new().write(config_path);
         println!(
-            "{} Created default config at {}, edit as needed",
-            prefix.yellow(),
-            path.underline()
+            "{prefix} Created default config at {path}, edit as needed\n{prefix} Run again to finish setup",
+            prefix = prefix.yellow(),
+            path = path.underline()
         );
-        println!("{} Run again to finish setup", prefix.yellow());
         return Err(ConfigError::FileMissing);
     }
 
     // Parse config file and validate if urls are defined
-    println!(
-        "{} Reading config from {}",
-        prefix.cyan(),
-        path.underline().yellow()
-    );
-
+    println!("{} Reading config from {}", prefix.cyan(), path.underline());
     match Config::setup_from(path) {
         Ok(config) => {
-            if config.remote_clash_binary_url.is_empty() {
-                println!("{} `remote_clash_binary_url` undefined", "error:".red());
-                return Err(ConfigError::ParseError);
+            let required_urls = [
+                ("remote_clash_binary_url", &config.remote_clash_binary_url),
+                ("remote_config_url", &config.remote_config_url),
+                ("remote_mmdb_url", &config.remote_mmdb_url),
+            ];
+
+            for (field, value) in required_urls.iter() {
+                if value.is_empty() {
+                    println!("{} `{}` undefined", "error:".red(), field);
+                    return Err(ConfigError::ParseError);
+                }
             }
-            if config.remote_config_url.is_empty() {
-                println!("{} `remote_config_url` undefined", "error:".red());
-                return Err(ConfigError::ParseError);
-            }
+
             return Ok(config);
         }
         Err(error) => {
