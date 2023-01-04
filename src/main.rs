@@ -36,7 +36,7 @@ enum Commands {
     Setup,
     #[command(about = "Update clash remote config, mmdb, and restart clash.service")]
     Update,
-    #[command(about = "Apply clash config override and restart clash.service")]
+    #[command(about = "Apply clash config overrides and restart clash.service")]
     Apply,
     #[command(about = "Start clash.service with systemctl")]
     Start,

@@ -29,7 +29,9 @@ Usage: clashrup [OPTIONS] [COMMAND]
 
 Commands:
   setup        Setup clashrup by downloading clash binary and remote config
-  update       Update clash remote config and restart clash.service
+  update       Update clash remote config, mmdb, and restart clash.service
+  apply        Apply clash config override and restart clash.service
+  start        Start clash.service with systemctl
   status       Check clash.service status with systemctl
   stop         Stop clash.service with systemctl
   restart      Restart clash.service with systemctl
@@ -55,10 +57,23 @@ Options:
 Default config is generated upon setup (with command `setup`) as:
 
 ```toml
+# ~/.config/clashrup.toml
 remote_clash_binary_url = ""
 remote_config_url = ""
+remote_mmdb_url = "https://cdn.jsdelivr.net/gh/Dreamacro/maxmind-geoip@release/Country.mmdb"
+clash_binary_path = "~/.local/bin/clash"
 clash_config_root = "~/.config/clash"
 user_systemd_root = "~/.config/systemd/user"
+
+[clash_config]
+port = 7890
+socks_port = 7891
+allow_lan = false
+bind_address = "*"
+mode = "rule"
+log_level = "info"
+ipv6 = false
+external_controller = "127.0.0.1:9090"
 ```
 
 ## License
