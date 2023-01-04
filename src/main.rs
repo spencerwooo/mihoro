@@ -11,6 +11,7 @@ use clap::Subcommand;
 use colored::Colorize;
 use shellexpand::tilde;
 
+use config::apply_clash_override;
 use config::parse_config;
 use config::Config;
 use systemctl::Systemctl;
@@ -33,8 +34,12 @@ struct Args {
 enum Commands {
     #[command(about = "Setup clashrup by downloading clash binary and remote config")]
     Setup,
-    #[command(about = "Update clash remote config and restart clash.service")]
+    #[command(about = "Update clash remote config, mmdb, and restart clash.service")]
     Update,
+    #[command(about = "Apply clash config override and restart clash.service")]
+    Apply,
+    #[command(about = "Start clash.service with systemctl")]
+    Start,
     #[command(about = "Check clash.service status with systemctl")]
     Status,
     #[command(about = "Stop clash.service with systemctl")]
@@ -83,8 +88,11 @@ fn main() {
             let executable = fs::Permissions::from_mode(0o755);
             fs::set_permissions(&clash_target_binary_path, executable).unwrap();
 
-            // Download clash remote configuration and mmdb
+            // Download remote clash config and apply override
             download_file(&config.remote_config_url, &clash_target_config_path);
+            apply_clash_override(&clash_target_config_path, &config.clash_config);
+
+            // Download remote Country.mmdb
             download_file(&config.remote_mmdb_url, &clash_target_mmdb_path);
 
             // Create clash.service systemd file
@@ -99,13 +107,30 @@ fn main() {
             Systemctl::new().start("clash.service").execute();
         }
         Some(Commands::Update) => {
-            // Download remote clash config and mmdb
+            // Download remote clash config and apply override
             download_file(&config.remote_config_url, &clash_target_config_path);
+            apply_clash_override(&clash_target_config_path, &config.clash_config);
+            println!("{} Updated and applied config overrides", prefix.yellow());
+
+            // Download remote Country.mmdb
             download_file(&config.remote_mmdb_url, &clash_target_mmdb_path);
 
             // Restart clash systemd service
+            println!("{} Restart clash.service", prefix.green());
             Systemctl::new().restart("clash.service").execute();
-            println!("{} Restarted clash.service", prefix.green());
+        }
+        Some(Commands::Apply) => {
+            // Apply clash config override
+            apply_clash_override(&clash_target_config_path, &config.clash_config);
+            println!("{} Applied clash config overrides", prefix.yellow());
+
+            // Restart clash systemd service
+            println!("{} Restart clash.service", prefix.green());
+            Systemctl::new().restart("clash.service").execute();
+        }
+        Some(Commands::Start) => {
+            Systemctl::new().start("clash.service").execute();
+            println!("{} Started clash.service", prefix.green());
         }
         Some(Commands::Status) => {
             Systemctl::new().status("clash.service").execute();
@@ -134,8 +159,8 @@ fn main() {
         Some(Commands::Proxy) => {
             // TODO: read this from clash config.yaml
             let hostname = "127.0.0.1";
-            let http_port = 7890;
-            let socks_port = 7891;
+            let http_port = config.clash_config.port;
+            let socks_port = config.clash_config.socks_port;
             let proxy_cmd = format!(
                 "export https_proxy=http://{hostname}:{http_port} \
                  http_proxy=http://{hostname}:{http_port} \
@@ -158,9 +183,9 @@ fn main() {
             delete_file(&clash_target_binary_path, prefix);
             delete_file(&clash_target_config_path, prefix);
 
+            println!("{} Disable and reload systemd services", prefix.green());
             Systemctl::new().daemon_reload().execute();
             Systemctl::new().reset_failed().execute();
-            println!("{} Disabled and reloaded systemd services", prefix.green());
         }
         None => {
             println!("{} No command specified, --help for usage", prefix.yellow());

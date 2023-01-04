@@ -22,3 +22,4 @@ reqwest = { version = "0.11", features = ["blocking"] }
 flate2 = "1.0"
 shellexpand = "3.0.0"
 openssl = { version = "0.10", features = ["vendored"] }
+serde_yaml = "0.9.16"
