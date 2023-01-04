@@ -49,7 +49,7 @@ enum Commands {
     Restart,
     #[command(about = "Check clash.service logs with journalctl")]
     Log,
-    #[command(about = "Proxy commands")]
+    #[command(about = "Proxy export commands, `clashrup proxy --help` to see more")]
     Proxy {
         #[command(subcommand)]
         proxy: Option<ProxyCommands>,
