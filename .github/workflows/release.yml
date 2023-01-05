@@ -17,21 +17,27 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             name: clashrup-x86_64-unknown-linux-gnu.tar.gz
             cross: false
+            strip: true
           - target: x86_64-unknown-linux-musl
             name: clashrup-x86_64-unknown-linux-musl.tar.gz
             cross: true
+            strip: true
           - target: i686-unknown-linux-gnu
             name: clashrup-i686-unknown-linux-gnu.tar.gz
             cross: true
+            strip: true
           - target: i686-unknown-linux-musl
             name: clashrup-i686-unknown-linux-musl.tar.gz
             cross: true
+            strip: true
           - target: aarch64-unknown-linux-gnu
             name: clashrup-aarch64-unknown-linux-gnu.tar.gz
             cross: true
+            strip: false
           - target: aarch64-unknown-linux-musl
             name: clashrup-aarch64-unknown-linux-musl.tar.gz
             cross: true
+            strip: false
 
     steps:
       - uses: actions/checkout@master
@@ -50,6 +56,8 @@ jobs:
         uses: svenstaro/upx-action@v2
         with:
           file: target/${{ matrix.target }}/release/clashrup
+          args: --best --lzma
+          strip: ${{ matrix.strip }}
 
       - name: Package binaries
         run: |
