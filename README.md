@@ -1,5 +1,6 @@
 # clashrup
 
+[![CI](https://github.com/spencerwooo/clashrup/actions/workflows/ci.yml/badge.svg)](https://github.com/spencerwooo/clashrup/actions/workflows/ci.yml)
 [![Release](https://github.com/spencerwooo/clashrup/actions/workflows/release.yml/badge.svg)](https://github.com/spencerwooo/clashrup/actions/workflows/release.yml)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/spencerwooo/clashrup)](https://github.com/spencerwooo/clashrup/releases/latest)
 
