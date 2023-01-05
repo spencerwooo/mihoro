@@ -40,19 +40,18 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Build binaries
-        # run: |
-        #   cargo install cross
-        #   cross build --release --target ${{ matrix.target }}
         uses: ClementTsang/cargo-action@v0.0.3
         with:
           command: build
           args: --release --target=${{ matrix.target }}
           use-cross: ${{ matrix.cross }}
 
-      - name: Strip binaries
-        run: strip target/${{ matrix.target }}/release/clashrup
-
       - name: Compress binaries
+        uses: svenstaro/upx-action@v2
+        with:
+          file: target/${{ matrix.target }}/release/clashrup
+
+      - name: Package binaries
         run: |
           cd target/${{ matrix.target }}/release
           tar -czvf ${{ matrix.name }} clashrup
