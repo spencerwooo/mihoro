@@ -129,7 +129,6 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
     match Config::setup_from(path) {
         Ok(config) => {
             let required_urls = [
-                ("remote_clash_binary_url", &config.remote_clash_binary_url),
                 ("remote_config_url", &config.remote_config_url),
                 ("remote_mmdb_url", &config.remote_mmdb_url),
             ];

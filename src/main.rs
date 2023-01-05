@@ -79,7 +79,7 @@ fn main() {
         Err(_) => return,
     };
 
-    // Clash related paths and target directories
+    // Expand clash related paths and target directories
     let clash_gzipped_path = "clash.tar.gz";
 
     let clash_target_binary_path = tilde(&config.clash_binary_path).to_string();
@@ -93,12 +93,28 @@ fn main() {
 
     match &args.command {
         Some(Commands::Setup) => {
-            // Download clash binary and set permission to executable
-            download_file(&config.remote_clash_binary_url, &clash_gzipped_path);
-            extract_gzip(&clash_gzipped_path, &clash_target_binary_path, prefix);
+            // Attempt to download and setup clash binary if needed
+            if fs::metadata(&clash_target_binary_path).is_ok() {
+                // If clash binary already exists at `clash_target_binary_path`, then skip setup
+                println!(
+                    "{} Assuming clash binary already installed at {}, skipping setup",
+                    prefix.yellow(),
+                    clash_target_binary_path.underline().green()
+                );
+            } else {
+                // Abort if `remote_clash_binary_url` is not defined in config
+                if config.remote_clash_binary_url.is_empty() {
+                    println!("{} `remote_clash_binary_url` undefined", "error:".red());
+                    return;
+                }
 
-            let executable = fs::Permissions::from_mode(0o755);
-            fs::set_permissions(&clash_target_binary_path, executable).unwrap();
+                // Download clash binary and set permission to executable
+                download_file(&config.remote_clash_binary_url, &clash_gzipped_path);
+                extract_gzip(&clash_gzipped_path, &clash_target_binary_path, prefix);
+
+                let executable = fs::Permissions::from_mode(0o755);
+                fs::set_permissions(&clash_target_binary_path, executable).unwrap();
+            }
 
             // Download remote clash config and apply override
             download_file(&config.remote_config_url, &clash_target_config_path);
