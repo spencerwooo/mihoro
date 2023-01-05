@@ -89,10 +89,14 @@ where,
 
 - Field `remote_clash_binary_url` should point to a downloadable gzipped `clash` binary URL
   ([example](https://github.com/MetaCubeX/Clash.Meta/releases/download/v1.14.0/Clash.Meta-linux-amd64-v1.14.0.gz)).
-- Field `remote_config_url` should point to your subscription provider's config URL.
+- Field `remote_config_url` should point to your subscription provider's config URL, which will be downloaded to
+  `{clash_config_root}/config.yaml` during `setup` and `update`.
 - Field `clash_config` holds a subset of supported config overrides for clash's `config.yaml`. Inside, `port`,
   `socks_port`, `mode`, and `log_level` are required. Other fields are optional. For a full list of configurable clash
   `config.yaml` fields, see [clash - Configuration](https://github.com/Dreamacro/clash/wiki/configuration).
+
+If clash binary already exists at `clash_binary_path`, then `remote_clash_binary_url` will be ignored and `setup` will
+skip downloading and setting up clash binary. (In this case, `remote_clash_binary_url` can be left empty.)
 
 Other fields should be self-explanatory.
 

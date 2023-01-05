@@ -131,6 +131,9 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
             let required_urls = [
                 ("remote_config_url", &config.remote_config_url),
                 ("remote_mmdb_url", &config.remote_mmdb_url),
+                ("clash_binary_path", &config.clash_binary_path),
+                ("clash_config_root", &config.clash_config_root),
+                ("user_systemd_root", &config.user_systemd_root),
             ];
 
             for (field, value) in required_urls.iter() {
