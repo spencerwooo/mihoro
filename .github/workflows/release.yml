@@ -52,12 +52,9 @@ jobs:
           args: --release --target=${{ matrix.target }}
           use-cross: ${{ matrix.cross }}
 
-      - name: Compress binaries
-        uses: svenstaro/upx-action@v2
-        with:
-          file: target/${{ matrix.target }}/release/clashrup
-          args: --best --lzma
-          strip: ${{ matrix.strip }}
+      - name: Strip binaries
+        run: strip target/${{ matrix.target }}/release/clashrup
+        if: ${{ matrix.strip }}
 
       - name: Package binaries
         run: |
