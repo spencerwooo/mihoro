@@ -18,8 +18,8 @@ Download prebuilt binary for Linux from [releases](https://github.com/spencerwoo
 `/usr/local/bin` (system-wide), `~/.local/bin` (user) or any other directory in your `$PATH`. Example:
 
 ```bash
-wget https://github.com/spencerwooo/clashrup/releases/download/{VERSION}/clashrup-{TARGET_ARCH}.tar.gz
-tar xvzf clashrup-{TARGET_ARCH}.tar.gz
+curl -LO https://github.com/spencerwooo/clashrup/releases/download/{VERSION}/clashrup-{TARGET_ARCH}.tar.gz
+tar -xvzf clashrup-{TARGET_ARCH}.tar.gz
 mv clashrup ~/.local/bin/clashrup
 ```
 
@@ -31,7 +31,7 @@ cargo install --path .
 
 ## Usage
 
-```
+```text
 Simple CLI to manage your systemd clash.service and config subscriptions on Linux.
 
 Usage: clashrup [OPTIONS] [COMMAND]
@@ -87,7 +87,7 @@ external_controller = "127.0.0.1:9090"
 
 where,
 
-- Field `remote_clash_binary_url` should point to a downloadable gzipped `clash` binary URL 
+- Field `remote_clash_binary_url` should point to a downloadable gzipped `clash` binary URL
   ([example](https://github.com/MetaCubeX/Clash.Meta/releases/download/v1.14.0/Clash.Meta-linux-amd64-v1.14.0.gz)).
 - Field `remote_config_url` should point to your subscription provider's config URL.
 - Field `clash_config` holds a subset of supported config overrides for clash's `config.yaml`. Inside, `port`,

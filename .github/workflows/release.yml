@@ -1,6 +1,7 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "*"
@@ -10,14 +11,27 @@ jobs:
     name: Build and publish release
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
             name: clashrup-x86_64-unknown-linux-gnu.tar.gz
+            cross: false
           - target: x86_64-unknown-linux-musl
             name: clashrup-x86_64-unknown-linux-musl.tar.gz
+            cross: true
           - target: i686-unknown-linux-gnu
             name: clashrup-i686-unknown-linux-gnu.tar.gz
+            cross: true
+          - target: i686-unknown-linux-musl
+            name: clashrup-i686-unknown-linux-musl.tar.gz
+            cross: true
+          - target: aarch64-unknown-linux-gnu
+            name: clashrup-aarch64-unknown-linux-gnu.tar.gz
+            cross: true
+          - target: aarch64-unknown-linux-musl
+            name: clashrup-aarch64-unknown-linux-musl.tar.gz
+            cross: true
 
     steps:
       - uses: actions/checkout@master
@@ -26,9 +40,14 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Build binaries
-        run: |
-          cargo install cross
-          cross build --release --target ${{ matrix.target }}
+        # run: |
+        #   cargo install cross
+        #   cross build --release --target ${{ matrix.target }}
+        uses: ClementTsang/cargo-action@v0.0.3
+        with:
+          command: build
+          args: --release --target=${{ matrix.target }}
+          use-cross: ${{ matrix.cross }}
 
       - name: Strip binaries
         run: strip target/${{ matrix.target }}/release/clashrup
