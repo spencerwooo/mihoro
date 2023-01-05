@@ -1,0 +1,6 @@
+reorder_imports = true
+reorder_modules = true
+merge_derives = true
+use_field_init_shorthand = true
+tab_spaces = 4
+max_width = 100

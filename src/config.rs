@@ -5,8 +5,6 @@ use std::path::Path;
 use colored::Colorize;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_yaml;
-use toml;
 
 /// `clashrup` configurations.
 #[derive(Serialize, Deserialize, Debug)]
@@ -143,13 +141,13 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
                 }
             }
 
-            return Ok(config);
+            Ok(config)
         }
         Err(error) => {
             println!("{} {}", "error:".red(), error);
-            return Err(ConfigError::ParseError);
+            Err(ConfigError::ParseError)
         }
-    };
+    }
 }
 
 /// `ClashYamlConfig` is defined to support serde serialization and deserialization of arbitrary clash `config.yaml`,
@@ -204,11 +202,11 @@ pub fn apply_clash_override(path: &str, override_config: &ClashConfig) {
     // Apply config overrides
     clash_yaml.port = Some(override_config.port);
     clash_yaml.socks_port = Some(override_config.socks_port);
-    clash_yaml.allow_lan = override_config.allow_lan.clone();
+    clash_yaml.allow_lan = override_config.allow_lan;
     clash_yaml.bind_address = override_config.bind_address.clone();
     clash_yaml.mode = Some(override_config.mode.clone());
     clash_yaml.log_level = Some(override_config.log_level.clone());
-    clash_yaml.ipv6 = override_config.ipv6.clone();
+    clash_yaml.ipv6 = override_config.ipv6;
     clash_yaml.external_controller = override_config.external_controller.clone();
     clash_yaml.external_ui = override_config.external_ui.clone();
 

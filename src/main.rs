@@ -74,7 +74,7 @@ fn main() {
     let config_path = tilde(&args.clashrup_config).to_string();
 
     // Initial setup and parse config file
-    let config: Config = match parse_config(&config_path, &prefix) {
+    let config: Config = match parse_config(&config_path, prefix) {
         Ok(config) => config,
         Err(_) => return,
     };
@@ -109,8 +109,8 @@ fn main() {
                 }
 
                 // Download clash binary and set permission to executable
-                download_file(&config.remote_clash_binary_url, &clash_gzipped_path);
-                extract_gzip(&clash_gzipped_path, &clash_target_binary_path, prefix);
+                download_file(&config.remote_clash_binary_url, clash_gzipped_path);
+                extract_gzip(clash_gzipped_path, &clash_target_binary_path, prefix);
 
                 let executable = fs::Permissions::from_mode(0o755);
                 fs::set_permissions(&clash_target_binary_path, executable).unwrap();
@@ -218,7 +218,7 @@ fn main() {
                 println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
             }
             Some(ProxyCommands::Unset) => {
-                let proxy_cmd = format!("unset https_proxy http_proxy all_proxy");
+                let proxy_cmd = "unset https_proxy http_proxy all_proxy";
                 println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
             }
             None => {
@@ -240,7 +240,6 @@ fn main() {
         }
         None => {
             println!("{} No command specified, --help for usage", prefix.yellow());
-            return;
         }
     }
 }
