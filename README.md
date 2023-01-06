@@ -15,6 +15,18 @@ Simple CLI to manage your systemd `clash.service` and config subscriptions on Li
 
 ## Installation
 
+### Using a one-liner installation script
+
+To install `clashrup`, inside your terminal, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/spencerwooo/clashup/main/install.sh | sh -
+```
+
+By default, this installs the executable to `~/.local/bin/clashrup`. Add `~/.local/bin` to `$PATH` if needed.
+
+### Downloading `clashrup` manually
+
 Download prebuilt binary for Linux from [releases](https://github.com/spencerwooo/clashrup/releases/latest). Move under
 `/usr/local/bin` (system-wide), `~/.local/bin` (user) or any other directory in your `$PATH`. Example:
 
@@ -23,6 +35,8 @@ curl -LO https://github.com/spencerwooo/clashrup/releases/download/{VERSION}/cla
 tar -xvzf clashrup-{TARGET_ARCH}.tar.gz
 mv clashrup ~/.local/bin/clashrup
 ```
+
+### Building from source
 
 Alternatively, clone the repo and install from source:
 
@@ -83,7 +97,7 @@ mode = "rule"
 log_level = "info"
 ipv6 = false
 external_controller = "127.0.0.1:9090"
-# external-ui = "folder"
+# external_ui = "folder"
 ```
 
 where,
