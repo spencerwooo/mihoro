@@ -20,7 +20,7 @@ Simple CLI to manage your systemd `clash.service` and config subscriptions on Li
 To install `clashrup`, inside your terminal, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/spencerwooo/clashup/main/install.sh | sh -
+curl -fsSL https://raw.githubusercontent.com/spencerwooo/clashrup/main/install.sh | sh -
 ```
 
 By default, this installs the executable to `~/.local/bin/clashrup`. Add `~/.local/bin` to `$PATH` if needed.
