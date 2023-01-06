@@ -97,7 +97,7 @@ mode = "rule"
 log_level = "info"
 ipv6 = false
 external_controller = "127.0.0.1:9090"
-# external-ui = "folder"
+# external_ui = "folder"
 ```
 
 where,
