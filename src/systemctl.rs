@@ -52,6 +52,10 @@ impl Systemctl {
     }
 
     pub fn execute(&mut self) {
-        self.systemctl.spawn().expect("failed to execute process");
+        self.systemctl
+            .spawn()
+            .expect("failed to execute process")
+            .wait()
+            .unwrap();
     }
 }
