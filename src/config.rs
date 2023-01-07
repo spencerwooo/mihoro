@@ -113,6 +113,12 @@ pub enum ConfigError {
 /// * If config file does not exist, creates default config file to path and returns error.
 /// * If found, tries to parse the file and returns error if parse fails or fields found undefined.
 pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
+    // Create `~/.config` directory if not exists
+    let parent_dir = Path::new(path).parent().unwrap();
+    if !parent_dir.exists() {
+        fs::create_dir_all(parent_dir).unwrap();
+    }
+
     // Create clashrup default config if not exists
     let config_path = Path::new(path);
     if !config_path.exists() {
