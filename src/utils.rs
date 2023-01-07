@@ -6,7 +6,7 @@ use colored::Colorize;
 use flate2::read::GzDecoder;
 
 pub fn download_file(url: &str, path: &str) {
-    // Create parent directory for download dest if not exists
+    // Create parent directory for download destination if not exists
     let parent_dir = Path::new(path).parent().unwrap();
     if !parent_dir.exists() {
         fs::create_dir_all(parent_dir).unwrap();
@@ -57,8 +57,8 @@ pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) {
 
 /// Create a systemd service file for running clash as a service.
 ///
-/// By default, user systemd services are created under `~/.config/systemd/user/clash.service` and invoked with
-/// `systemctl --user start clash.service`. Directory is created if not present.
+/// By default, user systemd services are created under `~/.config/systemd/user/clash.service` and
+/// invoked with `systemctl --user start clash.service`. Directory is created if not present.
 ///
 /// Reference: https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service
 pub fn create_clash_service(

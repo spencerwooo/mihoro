@@ -32,6 +32,7 @@ pub struct ClashConfig {
     ipv6: Option<bool>,
     external_controller: Option<String>,
     external_ui: Option<String>,
+    secret: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -79,15 +80,17 @@ impl Config {
                 ipv6: Some(false),
                 external_controller: Some(String::from("127.0.0.1:9090")),
                 external_ui: None,
+                secret: None,
             },
         }
     }
 
     /// Read raw config string from path and parse with crate toml.
     ///
-    /// TODO: Currently this will return error that shows a missing field error when parse fails, however the error
-    /// message always shows the line and column number as `line 1 column 1`, which is because the function
-    /// `fs::read_to_string` preserves newline characters as `\n`, resulting in a single-lined string.
+    /// TODO: Currently this will return error that shows a missing field error when parse fails,
+    /// however the error message always shows the line and column number as `line 1 column 1`,
+    /// which is because the function `fs::read_to_string` preserves newline characters as `\n`,
+    /// resulting in a single-lined string.
     pub fn setup_from(path: &str) -> Result<Config, toml::de::Error> {
         let raw_config = fs::read_to_string(path).unwrap();
         toml::from_str(&raw_config)
@@ -108,7 +111,7 @@ pub enum ConfigError {
 /// Tries to parse clashrup config as toml from path.
 ///
 /// * If config file does not exist, creates default config file to path and returns error.
-/// * If found, tries to parse config file and returns error if parse fails or some fields are not defined.
+/// * If found, tries to parse the file and returns error if parse fails or fields found undefined.
 pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
     // Create clashrup default config if not exists
     let config_path = Path::new(path);
@@ -150,9 +153,10 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
     }
 }
 
-/// `ClashYamlConfig` is defined to support serde serialization and deserialization of arbitrary clash `config.yaml`,
-/// with support for fields defined in `ClashConfig` for overrides and also extra fields that are not managed by
-/// `clashrup` by design (namely `proxies`, `proxy-groups`, `rules`, etc.)
+/// `ClashYamlConfig` is defined to support serde serialization and deserialization of arbitrary
+/// clash `config.yaml`, with support for fields defined in `ClashConfig` for overrides and also
+/// extra fields that are not managed by `clashrup` by design (namely `proxies`, `proxy-groups`,
+/// `rules`, etc.)
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClashYamlConfig {
     port: Option<u16>,
@@ -183,6 +187,9 @@ pub struct ClashYamlConfig {
     #[serde(rename = "external-ui", skip_serializing_if = "Option::is_none")]
     external_ui: Option<String>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    secret: Option<String>,
+
     #[serde(flatten)]
     extra: HashMap<String, serde_yaml::Value>,
 }
@@ -209,6 +216,7 @@ pub fn apply_clash_override(path: &str, override_config: &ClashConfig) {
     clash_yaml.ipv6 = override_config.ipv6;
     clash_yaml.external_controller = override_config.external_controller.clone();
     clash_yaml.external_ui = override_config.external_ui.clone();
+    clash_yaml.secret = override_config.secret.clone();
 
     // Write to file
     let serialized_clash_yaml = serde_yaml::to_string(&clash_yaml).unwrap();
