@@ -121,11 +121,17 @@ Other fields should be self-explanatory.
 We recommend setting `external_controller` and `secret` for clash's RESTful API, which can be used to manage clash via
 external dashboards like [yacd](https://github.com/haishanh/yacd).
 
-If you are using this on a remote Linux server, you can set `external_controller` to `:9090` to allow external access.
-After changing `clashrup.toml`, run `clashrup apply` to apply the changes to clash and restart `clash.service`. You can
-now use `http://{YOUR_SERVER_IP}:9090` to access the API and control clash's settings.
+If you are using this on a remote Linux server, edit `~/.config/clashrup.toml` and set `external_controller` to `:9090`:
 
-> **Warning** Set `secret` if external access is granted to prevent unauthorized access to your clash API.
+```diff
+-external_controller = "127.0.0.1:9090"
++external_controller = ":9090"
+```
+
+to allow external access. Run `clashrup apply` to apply the changes to clash and restart clash. You can now use
+`http://{YOUR_SERVER_IP}:9090` to access the API and control clash's settings.
+
+> **Warning**: Set `secret` if external access is granted to prevent unauthorized access to your clash API.
 
 ## License
 
