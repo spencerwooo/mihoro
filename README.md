@@ -46,32 +46,65 @@ cargo install --path .
 
 ## Usage
 
-```text
-Simple CLI to manage your systemd clash.service and config subscriptions on Linux.
+> **Note**: Run `clashrup --help` to see a list of available commands.
 
-Usage: clashrup [OPTIONS] [COMMAND]
+To setup and start `clash` as a systemd service on a new Linux device, run:
 
-Commands:
-  setup      Setup clashrup by downloading clash binary and remote config
-  update     Update clash remote config, mmdb, and restart clash.service
-  apply      Apply clash config overrides and restart clash.service
-  start      Start clash.service with systemctl
-  status     Check clash.service status with systemctl
-  stop       Stop clash.service with systemctl
-  restart    Restart clash.service with systemctl
-  log        Check clash.service logs with journalctl
-  proxy      Proxy export commands, `clashrup proxy --help` to see more
-  uninstall  Uninstall and remove clash and config
-  help       Print this message or the help of the given subcommand(s)
-
-Options:
-  -c, --clashrup-config <CLASHRUP_CONFIG>
-          Path to clashrup config file [default: ~/.config/clashrup.toml]
-  -h, --help
-          Print help information
-  -V, --version
-          Print version information
+```bash
+clashrup setup
 ```
+
+`clashrup` will first attempt to read from `~/.config/clashrup.toml` for config. If not found, it will generate a
+default one and abort. You would then need to edit the config file and run `clashrup setup` again. See
+[Configuration](#configuration) for more details.
+
+With a valid config, rerun `clashrup setup` to download `clash` binary and remote config. `clashrup` will attempt to:
+
+- Download `clash` binary from `remote_clash_binary_url` and extract it to `clash_binary_path`.
+- Download clash remote config from `remote_config_url`, apply overrides, and save it to under `clash_config_root`.
+- Create a user systemd service file `clash.service` under `user_systemd_root`.
+- Enable and start `clash.service` with `systemctl`.
+
+You can then check the status of the newly created `clash.service` running in the background with:
+
+```bash
+clashrup status
+```
+
+If something doesn't work as expected, you can check the logs with:
+
+```bash
+clashrup log
+```
+
+To update clash's config from remote and restart `clash.service`, run:
+
+```bash
+clashrup update
+```
+
+If you modified config overrides in `~/.config/clashrup.toml`, you can apply them to clash's config
+(`~/.config/clash/config.yaml`) and restart `clash.service` with:
+
+```bash
+clashrup apply
+```
+
+Finally, to stop `clash.service` and uninstall `clash` and config, run:
+
+```bash
+clashrup uninstall
+```
+
+Additionally, you would often need to set environment variables to proxy your traffic through `clash` within your
+current terminal session. `clashrup` provides a convenient command to generate command for exporting environment
+variables (`http_proxy`, `https_proxy`, and `all_proxy`) for your current session:
+
+```bash
+clashrup proxy export
+```
+
+> **Note**: For more proxy export commands, check `clashrup proxy --help`.
 
 ## Configuration
 
@@ -124,8 +157,8 @@ external dashboards like [yacd](https://github.com/haishanh/yacd).
 If you are using this on a remote Linux server, edit `~/.config/clashrup.toml` and set `external_controller` to `:9090`:
 
 ```diff
--external_controller = "127.0.0.1:9090"
-+external_controller = ":9090"
+- external_controller = "127.0.0.1:9090"
++ external_controller = ":9090"
 ```
 
 to allow external access. Run `clashrup apply` to apply the changes to clash and restart clash. You can now use
