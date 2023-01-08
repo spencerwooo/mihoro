@@ -58,10 +58,12 @@ clashrup setup
 default one and abort. You would then need to edit the config file and run `clashrup setup` again. See
 [Configuration](#configuration) for more details.
 
-With a valid config, rerun `clashrup setup` to download `clash` binary and remote config. `clashrup` will attempt to:
+With a valid config, rerun `clashrup setup` to download `clash` binary and remote config.
+
+Ultimately, `clashrup setup` will attempt to:
 
 - Download `clash` binary from `remote_clash_binary_url` and extract it to `clash_binary_path`.
-- Download clash remote config from `remote_config_url`, apply overrides, and save it to under `clash_config_root`.
+- Download clash remote config from `remote_config_url`, apply overrides, and save it under `clash_config_root`.
 - Create a user systemd service file `clash.service` under `user_systemd_root`.
 - Enable and start `clash.service` with `systemctl`.
 
@@ -71,11 +73,15 @@ You can then check the status of the newly created `clash.service` running in th
 clashrup status
 ```
 
+![clashrup status](https://user-images.githubusercontent.com/32114380/211195268-b2b55e92-7ca8-4df0-9956-7abaeb1b4711.png)
+
 If something doesn't work as expected, you can check the logs with:
 
 ```bash
 clashrup log
 ```
+
+![clashrup log](https://user-images.githubusercontent.com/32114380/211195288-fcf467a7-7a7a-4308-b84b-d28fc104d622.png)
 
 To update clash's config from remote and restart `clash.service`, run:
 
@@ -83,12 +89,16 @@ To update clash's config from remote and restart `clash.service`, run:
 clashrup update
 ```
 
+![clashrup update](https://user-images.githubusercontent.com/32114380/211195315-628e00d3-cccb-4832-ab01-4677aba44e8f.png)
+
 If you modified config overrides in `~/.config/clashrup.toml`, you can apply them to clash's config
 (`~/.config/clash/config.yaml`) and restart `clash.service` with:
 
 ```bash
 clashrup apply
 ```
+
+![clashrup apply](https://user-images.githubusercontent.com/32114380/211195224-ecc9e402-3d88-420f-8b05-bd2d242e8cd6.png)
 
 Finally, to stop `clash.service` and uninstall `clash` and config, run:
 
@@ -103,6 +113,8 @@ variables (`http_proxy`, `https_proxy`, and `all_proxy`) for your current sessio
 ```bash
 clashrup proxy export
 ```
+
+![clashrup proxy export](https://user-images.githubusercontent.com/32114380/211195082-fecdb1ce-8fbc-4d73-8266-d64496afb218.png)
 
 > **Note**: For more proxy export commands, check `clashrup proxy --help`.
 
