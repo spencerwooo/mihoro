@@ -10,6 +10,7 @@ use clap::Parser;
 use clap::Subcommand;
 use colored::Colorize;
 use local_ip_address::local_ip;
+use reqwest::Client;
 use shellexpand::tilde;
 
 use config::apply_clash_override;
@@ -68,7 +69,8 @@ enum ProxyCommands {
     Unset,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
     let prefix = "clashrup:";
     let config_path = tilde(&args.clashrup_config).to_string();
@@ -91,6 +93,9 @@ fn main() {
     let clash_target_service_path =
         tilde(&format!("{}/clash.service", config.user_systemd_root)).to_string();
 
+    // Reuse http client for file download
+    let client = Client::new();
+
     match &args.command {
         Some(Commands::Setup) => {
             // Attempt to download and setup clash binary if needed
@@ -109,7 +114,9 @@ fn main() {
                 }
 
                 // Download clash binary and set permission to executable
-                download_file(&config.remote_clash_binary_url, clash_gzipped_path);
+                download_file(&client, &config.remote_clash_binary_url, clash_gzipped_path)
+                    .await
+                    .unwrap();
                 extract_gzip(clash_gzipped_path, &clash_target_binary_path, prefix);
 
                 let executable = fs::Permissions::from_mode(0o755);
@@ -117,11 +124,19 @@ fn main() {
             }
 
             // Download remote clash config and apply override
-            download_file(&config.remote_config_url, &clash_target_config_path);
+            download_file(
+                &client,
+                &config.remote_config_url,
+                &clash_target_config_path,
+            )
+            .await
+            .unwrap();
             apply_clash_override(&clash_target_config_path, &config.clash_config);
 
             // Download remote Country.mmdb
-            download_file(&config.remote_mmdb_url, &clash_target_mmdb_path);
+            download_file(&client, &config.remote_mmdb_url, &clash_target_mmdb_path)
+                .await
+                .unwrap();
 
             // Create clash.service systemd file
             create_clash_service(
@@ -136,12 +151,20 @@ fn main() {
         }
         Some(Commands::Update) => {
             // Download remote clash config and apply override
-            download_file(&config.remote_config_url, &clash_target_config_path);
+            download_file(
+                &client,
+                &config.remote_config_url,
+                &clash_target_config_path,
+            )
+            .await
+            .unwrap();
             apply_clash_override(&clash_target_config_path, &config.clash_config);
             println!("{} Updated and applied config overrides", prefix.yellow());
 
             // Download remote Country.mmdb
-            download_file(&config.remote_mmdb_url, &clash_target_mmdb_path);
+            download_file(&client, &config.remote_mmdb_url, &clash_target_mmdb_path)
+                .await
+                .unwrap();
 
             // Restart clash systemd service
             println!("{} Restart clash.service", prefix.green());
