@@ -1,31 +1,86 @@
+use std::cmp::min;
 use std::fs;
+use std::fs::File;
 use std::io;
+use std::io::Write;
 use std::path::Path;
 
 use colored::Colorize;
 use flate2::read::GzDecoder;
+use futures_util::StreamExt;
+use indicatif::ProgressBar;
+use indicatif::ProgressStyle;
+use reqwest::Client;
 
-pub fn download_file(url: &str, path: &str) {
+/// Download file from url to path with a reusable http client.
+///
+/// Renders a progress bar if content-length is available from the url headers provided. If not,
+/// renders a spinner to indicate that something is downloading.
+///
+/// With reference from:
+/// * https://github.com/mihaigalos/tutorials/blob/800d5acbc333fd4068622e9b3d870cb5b7d34e12/rust/download_with_progressbar/src/main.rs
+/// * https://github.com/console-rs/indicatif/blob/2954b1a24ac5f1900a7861992e4825bff643c9e2/examples/yarnish.rs
+///
+/// Note: Allow `clippy::unused_io_amount` because we are writing downloaded chunks on the fly.
+#[allow(clippy::unused_io_amount)]
+pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<(), String> {
     // Create parent directory for download destination if not exists
     let parent_dir = Path::new(path).parent().unwrap();
     if !parent_dir.exists() {
         fs::create_dir_all(parent_dir).unwrap();
     }
 
-    // Download file
-    println!(
-        "{} Downloading from {}",
-        "download:".blue(),
-        url.underline().yellow()
-    );
-    let mut resp = reqwest::blocking::get(url).unwrap();
-    let mut file = fs::File::create(path).unwrap();
-    resp.copy_to(&mut file).unwrap();
-    println!(
-        "{} Downloaded to {}",
-        "download:".blue(),
-        path.underline().yellow()
-    );
+    // Create shared http client for multiple downloads when possible
+    let res = client
+        .get(url)
+        .send()
+        .await
+        .or(Err(format!("Failed to GET from '{}'", &url)))?;
+
+    // If content length is not available or 0, use a spinner instead of a progress bar
+    let total_size = res.content_length().unwrap_or(0);
+    let pb = ProgressBar::new(total_size);
+
+    let bar_style = ProgressStyle::with_template(
+        "{prefix:.blue}: {msg}\n          {elapsed_precise} [{bar:30.white/blue}] \
+         {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
+    )
+    .unwrap()
+    .progress_chars("-  ");
+    let spinner_style = ProgressStyle::with_template(
+        "{prefix:.blue}: {wide_msg}\n        \
+         {spinner} {elapsed_precise} - Download speed {bytes_per_sec}",
+    )
+    .unwrap();
+
+    if total_size == 0 {
+        pb.set_style(spinner_style);
+    } else {
+        pb.set_style(bar_style);
+    }
+    pb.set_prefix("download");
+    pb.set_message(format!("Downloading {}", url.underline()));
+
+    // Start file download and update progress bar when new data chunk is received
+    let mut file = File::create(path).unwrap();
+    let mut downloaded: u64 = 0;
+    let mut stream = res.bytes_stream();
+
+    while let Some(item) = stream.next().await {
+        let chunk = item.or(Err("Error while downloading file"))?;
+
+        file.write(&chunk).or(Err("Error while writing to file"))?;
+        if total_size != 0 {
+            let new = min(downloaded + (chunk.len() as u64), total_size);
+            downloaded = new;
+            pb.set_position(new);
+        } else {
+            pb.inc(chunk.len() as u64);
+        }
+    }
+
+    pb.finish_with_message(format!("Downloaded to {}", path.underline()));
+    Ok(())
 }
 
 pub fn delete_file(path: &str, prefix: &str) {
