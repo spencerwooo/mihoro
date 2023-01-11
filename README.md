@@ -11,7 +11,7 @@ Simple CLI to manage your systemd `clash.service` and config subscriptions on Li
 - No root privilege is required. `clash.service` is created under user systemd by default.
 - `clashrup` got its name from [clashup](https://github.com/felinae98/clashup), a friendly Python alternative.
 
-![clashrup setup and update](https://user-images.githubusercontent.com/32114380/211471689-71ddd3d1-c338-40c0-8a8e-de0e1518dfb8.png)
+![clashrup setup and update](https://user-images.githubusercontent.com/32114380/211721498-f80a1aa7-2e52-4425-a04e-d2ad1f3f7dbf.png)
 
 ## Installation
 
