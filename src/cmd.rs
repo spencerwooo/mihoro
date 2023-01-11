@@ -57,8 +57,8 @@ pub enum ProxyCommands {
 pub enum ClapShell {
     #[command(about = "Generate bash completions")]
     Bash,
-    // #[command(about = "Generate fish completions")]
-    // Fish,
+    #[command(about = "Generate fish completions")]
+    Fish,
     #[command(about = "Generate zsh completions")]
     Zsh,
     // #[command(about = "Generate powershell completions")]

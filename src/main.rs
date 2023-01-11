@@ -12,6 +12,7 @@ use clap::CommandFactory;
 use clap::Parser;
 use clap_complete::generate;
 use clap_complete::shells::Bash;
+use clap_complete::shells::Fish;
 use clap_complete::shells::Zsh;
 use colored::Colorize;
 use local_ip_address::local_ip;
@@ -228,6 +229,9 @@ async fn main() {
             }
             Some(ClapShell::Zsh) => {
                 generate(Zsh, &mut Args::command(), "clashrup", &mut io::stdout())
+            }
+            Some(ClapShell::Fish) => {
+                generate(Fish, &mut Args::command(), "clashrup", &mut io::stdout())
             }
             _ => {
                 println!("{} No shell specified, --help for usage", prefix.red());
