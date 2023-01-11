@@ -132,7 +132,7 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
     }
 
     // Parse config file and validate if urls are defined
-    println!("{} Reading config from {}", prefix.cyan(), path.underline());
+    // println!("{} Reading config from {}", prefix.cyan(), path.underline());
     match Config::setup_from(path) {
         Ok(config) => {
             let required_urls = [
