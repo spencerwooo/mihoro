@@ -1,18 +1,28 @@
+mod cmd;
 mod config;
 mod systemctl;
 mod utils;
 
 use std::fs;
+use std::io;
 use std::os::unix::prelude::PermissionsExt;
 use std::process::Command;
 
+use clap::CommandFactory;
 use clap::Parser;
-use clap::Subcommand;
+use clap_complete::generate;
+use clap_complete::shells::Bash;
+use clap_complete::shells::Fish;
+use clap_complete::shells::Zsh;
 use colored::Colorize;
 use local_ip_address::local_ip;
 use reqwest::Client;
 use shellexpand::tilde;
 
+use cmd::Args;
+use cmd::ClapShell;
+use cmd::Commands;
+use cmd::ProxyCommands;
 use config::apply_clash_override;
 use config::parse_config;
 use config::Config;
@@ -21,53 +31,6 @@ use utils::create_clash_service;
 use utils::delete_file;
 use utils::download_file;
 use utils::extract_gzip;
-
-#[derive(Parser)]
-#[command(author, about, version)]
-struct Args {
-    /// Path to clashrup config file
-    #[clap(short, long, default_value = "~/.config/clashrup.toml")]
-    clashrup_config: String,
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    #[command(about = "Setup clashrup by downloading clash binary and remote config")]
-    Setup,
-    #[command(about = "Update clash remote config, mmdb, and restart clash.service")]
-    Update,
-    #[command(about = "Apply clash config overrides and restart clash.service")]
-    Apply,
-    #[command(about = "Start clash.service with systemctl")]
-    Start,
-    #[command(about = "Check clash.service status with systemctl")]
-    Status,
-    #[command(about = "Stop clash.service with systemctl")]
-    Stop,
-    #[command(about = "Restart clash.service with systemctl")]
-    Restart,
-    #[command(about = "Check clash.service logs with journalctl")]
-    Log,
-    #[command(about = "Proxy export commands, `clashrup proxy --help` to see more")]
-    Proxy {
-        #[command(subcommand)]
-        proxy: Option<ProxyCommands>,
-    },
-    #[command(about = "Uninstall and remove clash and config")]
-    Uninstall,
-}
-
-#[derive(Subcommand)]
-enum ProxyCommands {
-    #[command(about = "Output and copy proxy export shell commands")]
-    Export,
-    #[command(about = "Output and copy proxy export shell commands for LAN access")]
-    ExportLan,
-    #[command(about = "Output and copy proxy unset shell commands")]
-    Unset,
-}
 
 #[tokio::main]
 async fn main() {
@@ -244,9 +207,8 @@ async fn main() {
                 let proxy_cmd = "unset https_proxy http_proxy all_proxy";
                 println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
             }
-            None => {
-                // Should not reach here
-                println!("{} No proxy command provided", prefix.red());
+            _ => {
+                println!("{} No proxy command, --help for ussage", prefix.red());
             }
         },
         Some(Commands::Uninstall) => {
@@ -261,6 +223,20 @@ async fn main() {
             Systemctl::new().daemon_reload().execute();
             Systemctl::new().reset_failed().execute();
         }
+        Some(Commands::Completions { shell }) => match shell {
+            Some(ClapShell::Bash) => {
+                generate(Bash, &mut Args::command(), "clashrup", &mut io::stdout())
+            }
+            Some(ClapShell::Zsh) => {
+                generate(Zsh, &mut Args::command(), "clashrup", &mut io::stdout())
+            }
+            Some(ClapShell::Fish) => {
+                generate(Fish, &mut Args::command(), "clashrup", &mut io::stdout())
+            }
+            _ => {
+                println!("{} No shell specified, --help for usage", prefix.red());
+            }
+        },
         None => {
             println!("{} No command specified, --help for usage", prefix.yellow());
         }
