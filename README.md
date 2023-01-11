@@ -169,14 +169,48 @@ external dashboards like [yacd](https://github.com/haishanh/yacd).
 If you are using this on a remote Linux server, edit `~/.config/clashrup.toml` and set `external_controller` to `:9090`:
 
 ```diff
-- external_controller = "127.0.0.1:9090"
-+ external_controller = ":9090"
+-external_controller = "127.0.0.1:9090"
++external_controller = ":9090"
 ```
 
 to allow external access. Run `clashrup apply` to apply the changes to clash and restart clash. You can now use
 `http://{YOUR_SERVER_IP}:9090` to access the API and control clash's settings.
 
 > **Warning**: Set `secret` if external access is granted to prevent unauthorized access to your clash API.
+
+## Shell completions
+
+`clashrup` has built-in support for generating shell completion information for the CLI. `clashrup` will output to
+stdout completions with `clashrup completions <shell>`. `bash`, `zsh`, and `fish` are currently supported.
+
+### bash
+
+```bash
+mkdir -p ~/.local/share/bash-completion/completions
+clashrup completions bash > ~/.local/share/bash-completion/completions/clashrup
+```
+
+### zsh
+
+```bash
+mkdir -p ~/.local/share/zsh/site-functions
+clashrup completions zsh > ~/.local/share/zsh/site-functions/_clashrup
+```
+
+Additionally, add directory `~/.local/share/zsh/site-functions` to your `fpath` where completions are loaded from.
+Ideally, above where `compinit` is called in your `~/.zshrc`:
+
+```diff
++fpath=(~/.local/share/zsh/site-functions $fpath)
+ autoload -Uz compinit
+ compinit -u
+```
+
+### fish
+
+```bash
+clashrup completions fish > ~/.config/fish/completions/clashrup.fish
+```
 
 ## License
 
