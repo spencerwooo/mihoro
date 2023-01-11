@@ -36,6 +36,11 @@ pub enum Commands {
     },
     #[command(about = "Uninstall and remove clash and config")]
     Uninstall,
+    #[command(about = "Generate shell completions for clashrup")]
+    Completions {
+        #[clap(subcommand)]
+        shell: Option<ClapShell>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -46,4 +51,18 @@ pub enum ProxyCommands {
     ExportLan,
     #[command(about = "Output and copy proxy unset shell commands")]
     Unset,
+}
+
+#[derive(Subcommand)]
+pub enum ClapShell {
+    #[command(about = "Generate bash completions")]
+    Bash,
+    // #[command(about = "Generate fish completions")]
+    // Fish,
+    #[command(about = "Generate zsh completions")]
+    Zsh,
+    // #[command(about = "Generate powershell completions")]
+    // Powershell,
+    // #[command(about = "Generate elvish completions")]
+    // Elvish,
 }

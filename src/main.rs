@@ -4,16 +4,22 @@ mod systemctl;
 mod utils;
 
 use std::fs;
+use std::io;
 use std::os::unix::prelude::PermissionsExt;
 use std::process::Command;
 
+use clap::CommandFactory;
 use clap::Parser;
+use clap_complete::generate;
+use clap_complete::shells::Bash;
+use clap_complete::shells::Zsh;
 use colored::Colorize;
 use local_ip_address::local_ip;
 use reqwest::Client;
 use shellexpand::tilde;
 
 use cmd::Args;
+use cmd::ClapShell;
 use cmd::Commands;
 use cmd::ProxyCommands;
 use config::apply_clash_override;
@@ -200,9 +206,8 @@ async fn main() {
                 let proxy_cmd = "unset https_proxy http_proxy all_proxy";
                 println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
             }
-            None => {
-                // Should not reach here
-                println!("{} No proxy command provided", prefix.red());
+            _ => {
+                println!("{} No proxy command, --help for ussage", prefix.red());
             }
         },
         Some(Commands::Uninstall) => {
@@ -217,6 +222,17 @@ async fn main() {
             Systemctl::new().daemon_reload().execute();
             Systemctl::new().reset_failed().execute();
         }
+        Some(Commands::Completions { shell }) => match shell {
+            Some(ClapShell::Bash) => {
+                generate(Bash, &mut Args::command(), "clashrup", &mut io::stdout())
+            }
+            Some(ClapShell::Zsh) => {
+                generate(Zsh, &mut Args::command(), "clashrup", &mut io::stdout())
+            }
+            _ => {
+                println!("{} No shell specified, --help for usage", prefix.red());
+            }
+        },
         None => {
             println!("{} No command specified, --help for usage", prefix.yellow());
         }
