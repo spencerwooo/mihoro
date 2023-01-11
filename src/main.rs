@@ -1,3 +1,4 @@
+mod cmd;
 mod config;
 mod systemctl;
 mod utils;
@@ -7,12 +8,14 @@ use std::os::unix::prelude::PermissionsExt;
 use std::process::Command;
 
 use clap::Parser;
-use clap::Subcommand;
 use colored::Colorize;
 use local_ip_address::local_ip;
 use reqwest::Client;
 use shellexpand::tilde;
 
+use cmd::Args;
+use cmd::Commands;
+use cmd::ProxyCommands;
 use config::apply_clash_override;
 use config::parse_config;
 use config::Config;
@@ -21,53 +24,6 @@ use utils::create_clash_service;
 use utils::delete_file;
 use utils::download_file;
 use utils::extract_gzip;
-
-#[derive(Parser)]
-#[command(author, about, version)]
-struct Args {
-    /// Path to clashrup config file
-    #[clap(short, long, default_value = "~/.config/clashrup.toml")]
-    clashrup_config: String,
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    #[command(about = "Setup clashrup by downloading clash binary and remote config")]
-    Setup,
-    #[command(about = "Update clash remote config, mmdb, and restart clash.service")]
-    Update,
-    #[command(about = "Apply clash config overrides and restart clash.service")]
-    Apply,
-    #[command(about = "Start clash.service with systemctl")]
-    Start,
-    #[command(about = "Check clash.service status with systemctl")]
-    Status,
-    #[command(about = "Stop clash.service with systemctl")]
-    Stop,
-    #[command(about = "Restart clash.service with systemctl")]
-    Restart,
-    #[command(about = "Check clash.service logs with journalctl")]
-    Log,
-    #[command(about = "Proxy export commands, `clashrup proxy --help` to see more")]
-    Proxy {
-        #[command(subcommand)]
-        proxy: Option<ProxyCommands>,
-    },
-    #[command(about = "Uninstall and remove clash and config")]
-    Uninstall,
-}
-
-#[derive(Subcommand)]
-enum ProxyCommands {
-    #[command(about = "Output and copy proxy export shell commands")]
-    Export,
-    #[command(about = "Output and copy proxy export shell commands for LAN access")]
-    ExportLan,
-    #[command(about = "Output and copy proxy unset shell commands")]
-    Unset,
-}
 
 #[tokio::main]
 async fn main() {
