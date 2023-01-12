@@ -133,7 +133,7 @@ ExecStart={clash_binary_path} -d {clash_config_root}
 Restart=always
 
 [Install]
-WantedBy=multi-user.target",
+WantedBy=default.target",
         clash_binary_path = clash_binary_path,
         clash_config_root = clash_config_root
     );
