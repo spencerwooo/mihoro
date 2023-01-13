@@ -61,6 +61,11 @@ async fn main() {
 
     match &args.command {
         Some(Commands::Setup) => {
+            println!(
+                "{} Setting up clash's binary, config, and systemd service...",
+                prefix.cyan()
+            );
+
             // Attempt to download and setup clash binary if needed
             if fs::metadata(&clash_target_binary_path).is_ok() {
                 // If clash binary already exists at `clash_target_binary_path`, then skip setup
@@ -215,8 +220,8 @@ async fn main() {
             Systemctl::new().stop("clash.service").execute();
             Systemctl::new().disable("clash.service").execute();
 
+            // delete_file(&clash_target_binary_path, prefix);
             delete_file(&clash_target_service_path, prefix);
-            delete_file(&clash_target_binary_path, prefix);
             delete_file(&clash_target_config_path, prefix);
 
             println!("{} Disable and reload systemd services", prefix.green());
