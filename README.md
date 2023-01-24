@@ -11,7 +11,7 @@ Simple CLI to manage your systemd `clash.service` and config subscriptions on Li
 - No root privilege is required. `clash.service` is created under user systemd by default.
 - `clashrup` got its name from [clashup](https://github.com/felinae98/clashup), a friendly Python alternative.
 
-![clashrup setup and update](https://user-images.githubusercontent.com/32114380/211721498-f80a1aa7-2e52-4425-a04e-d2ad1f3f7dbf.png)
+![clashrup setup and update](https://user-images.githubusercontent.com/32114380/214243049-00aa6c1d-1393-4e3d-b0f2-7ab648f0d27d.png)
 
 ## Installation
 
@@ -73,7 +73,7 @@ You can then check the status of the newly created `clash.service` running in th
 clashrup status
 ```
 
-![clashrup status](https://user-images.githubusercontent.com/32114380/211195268-b2b55e92-7ca8-4df0-9956-7abaeb1b4711.png)
+![clashrup status](https://user-images.githubusercontent.com/32114380/214243273-ac391d2b-8dcb-4ef0-ab14-ecc08aaa3f81.png)
 
 If something doesn't work as expected, you can check the logs with:
 
@@ -81,7 +81,7 @@ If something doesn't work as expected, you can check the logs with:
 clashrup log
 ```
 
-![clashrup log](https://user-images.githubusercontent.com/32114380/211195288-fcf467a7-7a7a-4308-b84b-d28fc104d622.png)
+![clashrup log](https://user-images.githubusercontent.com/32114380/214243360-12bf5b4e-7c71-4c13-ba16-1499bc11f7d9.png)
 
 To update clash's config from remote and restart `clash.service`, run:
 
@@ -89,7 +89,7 @@ To update clash's config from remote and restart `clash.service`, run:
 clashrup update
 ```
 
-![clashrup update](https://user-images.githubusercontent.com/32114380/211195315-628e00d3-cccb-4832-ab01-4677aba44e8f.png)
+![clashrup update](https://user-images.githubusercontent.com/32114380/214244906-5281a4ea-09a3-4a74-aaf1-d14fcd2ca1b9.png)
 
 If you modified config overrides in `~/.config/clashrup.toml`, you can apply them to clash's config
 (`~/.config/clash/config.yaml`) and restart `clash.service` with:
@@ -97,8 +97,6 @@ If you modified config overrides in `~/.config/clashrup.toml`, you can apply the
 ```bash
 clashrup apply
 ```
-
-![clashrup apply](https://user-images.githubusercontent.com/32114380/211195224-ecc9e402-3d88-420f-8b05-bd2d242e8cd6.png)
 
 Finally, to stop `clash.service` and uninstall `clash` and config, run:
 
@@ -113,8 +111,6 @@ variables (`http_proxy`, `https_proxy`, and `all_proxy`) for your current sessio
 ```bash
 clashrup proxy export
 ```
-
-![clashrup proxy export](https://user-images.githubusercontent.com/32114380/211195082-fecdb1ce-8fbc-4d73-8266-d64496afb218.png)
 
 > **Note**: For more proxy export commands, check `clashrup proxy --help`.
 
