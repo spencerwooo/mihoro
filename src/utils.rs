@@ -5,6 +5,7 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 
+use clap_complete::shells::Shell;
 use colored::Colorize;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
@@ -152,4 +153,45 @@ WantedBy=default.target",
         prefix.green(),
         clash_service_path.underline().yellow()
     );
+}
+
+pub fn proxy_export_cmd(hostname: &str, http_port: &u16, socks_port: &u16) -> String {
+    // Check current shell
+    let shell = Shell::from_env().unwrap_or(Shell::Bash);
+    match shell {
+        Shell::Fish => {
+            // For fish, use `set -gx $ENV_VAR value` to set environment variables
+            return format!(
+                "set -gx https_proxy http://{hostname}:{http_port} \
+                set -gx http_proxy http://{hostname}:{http_port} \
+                set -gx all_proxy socks5://{hostname}:{socks_port}",
+                hostname = hostname,
+                http_port = http_port,
+                socks_port = socks_port
+            );
+        }
+        _ => {
+            // For all other shells (bash/zsh), use `export $ENV_VAR=value`
+            return format!(
+                "export https_proxy=http://{hostname}:{http_port} \
+                http_proxy=http://{hostname}:{http_port} \
+                all_proxy=socks5://{hostname}:{socks_port}"
+            );
+        }
+    }
+}
+
+pub fn proxy_unset_cmd() -> String {
+    // Check current shell
+    let shell = Shell::from_env().unwrap_or(Shell::Bash);
+    match shell {
+        Shell::Fish => {
+            // For fish, use `set -e $ENV_VAR` to unset environment variables
+            return "set -e https_proxy http_proxy all_proxy".to_owned();
+        }
+        _ => {
+            // For all other shells (bash/zsh), use `unset $ENV_VAR`
+            return "unset https_proxy http_proxy all_proxy".to_owned();
+        }
+    }
 }
