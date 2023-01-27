@@ -31,6 +31,8 @@ use utils::create_clash_service;
 use utils::delete_file;
 use utils::download_file;
 use utils::extract_gzip;
+use utils::proxy_export_cmd;
+use utils::proxy_unset_cmd;
 
 #[tokio::main]
 async fn main() {
@@ -177,15 +179,14 @@ async fn main() {
         }
         Some(Commands::Proxy { proxy }) => match proxy {
             Some(ProxyCommands::Export) => {
-                let proxy_cmd = format!(
-                    "export https_proxy=http://{hostname}:{http_port} \
-                     http_proxy=http://{hostname}:{http_port} \
-                     all_proxy=socks5://{hostname}:{socks_port}",
-                    hostname = "127.0.0.1",
-                    http_port = config.clash_config.port,
-                    socks_port = config.clash_config.socks_port
-                );
-                println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
+                println!(
+                    "{}",
+                    proxy_export_cmd(
+                        "127.0.0.1",
+                        &config.clash_config.port,
+                        &config.clash_config.socks_port
+                    )
+                )
             }
             Some(ProxyCommands::ExportLan) => {
                 if !config.clash_config.allow_lan.unwrap_or(false) {
@@ -197,20 +198,22 @@ async fn main() {
                     return;
                 }
 
-                let host = local_ip().unwrap();
-                let proxy_cmd = format!(
-                    "export https_proxy=http://{hostname}:{http_port} \
-                     http_proxy=http://{hostname}:{http_port} \
-                     all_proxy=socks5://{hostname}:{socks_port}",
-                    hostname = host,
-                    http_port = config.clash_config.port,
-                    socks_port = config.clash_config.socks_port
-                );
-                println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
+                let hostname = local_ip();
+                if let Ok(hostname) = hostname {
+                    println!(
+                        "{}",
+                        proxy_export_cmd(
+                            &hostname.to_string(),
+                            &config.clash_config.port,
+                            &config.clash_config.socks_port
+                        )
+                    )
+                } else {
+                    println!("{} Failed to get local IP address", prefix.red());
+                }
             }
             Some(ProxyCommands::Unset) => {
-                let proxy_cmd = "unset https_proxy http_proxy all_proxy";
-                println!("{} Run ->\n    {}", prefix.blue(), &proxy_cmd.bold());
+                println!("{}", proxy_unset_cmd())
             }
             _ => {
                 println!("{} No proxy command, --help for ussage", prefix.red());
