@@ -64,7 +64,7 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<(),
 
     let truncated_url = Truncatable::from(url)
         .truncator("...".into())
-        .truncate(50)
+        .truncate(64)
         .underline();
     pb.set_message(format!("Downloading {truncated_url}"));
 
