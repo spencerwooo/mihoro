@@ -12,6 +12,7 @@ use futures_util::StreamExt;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 use reqwest::Client;
+use truncatable::Truncatable;
 
 /// Download file from url to path with a reusable http client.
 ///
@@ -60,7 +61,12 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<(),
         pb.set_style(bar_style);
     }
     pb.set_prefix("download");
-    pb.set_message(format!("Downloading {}", url.underline()));
+
+    let truncated_url = Truncatable::from(url)
+        .truncator("...".into())
+        .truncate(50)
+        .underline();
+    pb.set_message(format!("Downloading {truncated_url}"));
 
     // Start file download and update progress bar when new data chunk is received
     let mut file = File::create(path).unwrap();
@@ -134,9 +140,7 @@ ExecStart={clash_binary_path} -d {clash_config_root}
 Restart=always
 
 [Install]
-WantedBy=default.target",
-        clash_binary_path = clash_binary_path,
-        clash_config_root = clash_config_root
+WantedBy=default.target"
     );
 
     // Create clash service directory if not exists
@@ -161,22 +165,19 @@ pub fn proxy_export_cmd(hostname: &str, http_port: &u16, socks_port: &u16) -> St
     match shell {
         Shell::Fish => {
             // For fish, use `set -gx $ENV_VAR value` to set environment variables
-            return format!(
+            format!(
                 "set -gx https_proxy http://{hostname}:{http_port} \
                 set -gx http_proxy http://{hostname}:{http_port} \
-                set -gx all_proxy socks5://{hostname}:{socks_port}",
-                hostname = hostname,
-                http_port = http_port,
-                socks_port = socks_port
-            );
+                set -gx all_proxy socks5://{hostname}:{socks_port}"
+            )
         }
         _ => {
             // For all other shells (bash/zsh), use `export $ENV_VAR=value`
-            return format!(
+            format!(
                 "export https_proxy=http://{hostname}:{http_port} \
                 http_proxy=http://{hostname}:{http_port} \
                 all_proxy=socks5://{hostname}:{socks_port}"
-            );
+            )
         }
     }
 }
@@ -187,11 +188,11 @@ pub fn proxy_unset_cmd() -> String {
     match shell {
         Shell::Fish => {
             // For fish, use `set -e $ENV_VAR` to unset environment variables
-            return "set -e https_proxy http_proxy all_proxy".to_owned();
+            "set -e https_proxy http_proxy all_proxy".to_owned()
         }
         _ => {
             // For all other shells (bash/zsh), use `unset $ENV_VAR`
-            return "unset https_proxy http_proxy all_proxy".to_owned();
+            "unset https_proxy http_proxy all_proxy".to_owned()
         }
     }
 }

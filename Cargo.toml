@@ -1,7 +1,7 @@
 [package]
 name = "clashrup"
 description = "Simple CLI to manage your systemd clash.service and config subscriptions on Linux."
-version = "0.2.6"
+version = "0.2.7"
 edition = "2021"
 readme = "README.md"
 license = "MIT"
@@ -28,3 +28,4 @@ reqwest = { version = "0.11", features = ["stream"] }
 futures-util = "0.3"
 indicatif = "0.17"
 tokio = { version = "1.25", features = ["full"] }
+truncatable = "0.1.3"
