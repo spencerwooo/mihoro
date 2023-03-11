@@ -17,7 +17,7 @@ categories = ["command-line-utilities"]
 clap = { version = "4.1.8", features = ["derive"] }
 clap_complete = "4.1.4"
 colored = "2.0.0"
-serde = { version = "1.0.154", features = ["derive"] }
+serde = { version = "1.0.155", features = ["derive"] }
 toml = "0.7.2"
 flate2 = "1.0"
 shellexpand = "3.0.0"
