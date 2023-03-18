@@ -18,7 +18,7 @@ clap = { version = "4.1.8", features = ["derive"] }
 clap_complete = "4.1.4"
 colored = "2.0.0"
 serde = { version = "1.0.156", features = ["derive"] }
-toml = "0.7.2"
+toml = "0.7.3"
 flate2 = "1.0"
 shellexpand = "3.0.0"
 openssl = { version = "0.10", features = ["vendored"] }
