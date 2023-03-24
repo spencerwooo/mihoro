@@ -20,7 +20,7 @@ colored = "2.0.0"
 serde = { version = "1.0.158", features = ["derive"] }
 toml = "0.7.3"
 flate2 = "1.0"
-shellexpand = "3.0.0"
+shellexpand = "3.1.0"
 openssl = { version = "0.10", features = ["vendored"] }
 serde_yaml = "0.9.19"
 local-ip-address = "0.5.1"
