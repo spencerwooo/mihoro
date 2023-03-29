@@ -15,7 +15,7 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 clap = { version = "4.2.0", features = ["derive"] }
-clap_complete = "4.1.6"
+clap_complete = "4.2.0"
 colored = "2.0.0"
 serde = { version = "1.0.159", features = ["derive"] }
 toml = "0.7.3"
