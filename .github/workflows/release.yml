@@ -46,7 +46,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Build binaries
-        uses: ClementTsang/cargo-action@v0.0.3
+        uses: ClementTsang/cargo-action@v0.0.4
         with:
           command: build
           args: --release --target=${{ matrix.target }}
