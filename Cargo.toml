@@ -1,6 +1,6 @@
 [package]
-name = "clashrup"
-description = "Simple CLI to manage your systemd clash.service and config subscriptions on Linux."
+name = "mihoro"
+description = "Mihomo CLI client on Linux."
 version = "0.2.7"
 edition = "2021"
 readme = "README.md"
