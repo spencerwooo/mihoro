@@ -98,8 +98,8 @@ download_mihoro() {
 
   local _package="mihoro.$_ext"
   case "$_dld" in
-  curl) _releases="$(curl -sLo "$_package" "$_package_url")" || err "curl: failed to download $_package_url" ;;
-  wget) _releases="$(wget -qO "$_package" "$_package_url")" || err "wget: failed to download $_package_url" ;;
+  curl) _releases="$(curl -sLo "$_package" "https://mirror.ghproxy.com/$_package_url")" || err "curl: failed to download https://mirror.ghproxy.com/$_package_url" ;;
+  wget) _releases="$(wget -qO "$_package" "https://mirror.ghproxy.com/$_package_url")" || err "wget: failed to download https://mirror.ghproxy.com/$_package_url" ;;
   esac
 
   RETVAL="$_package"
