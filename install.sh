@@ -1,7 +1,7 @@
 #!/bin/sh
 # shellcheck shell=dash
 
-# Installing clashrup - with code shamelessly referenced from zoxide/install.sh
+# Installing mihoro - with code shamelessly referenced from zoxide/install.sh
 #
 # https://github.com/ajeetdsouza/zoxide/blob/7af4da1dabfcfc9a4b23cc8807150bf2f61a0df6/install.sh
 #
@@ -30,7 +30,7 @@ main() {
   cd "$_tmp_dir" || err "cd: failed to enter directory: $_tmp_dir"
 
   # Download and extract zoxide.
-  ensure download_clashrup "$_arch"
+  ensure download_mihoro "$_arch"
   local _package="$RETVAL"
   assert_nz "$_package" "package"
   echo "Downloaded package: $_package"
@@ -51,20 +51,20 @@ main() {
   # Install binary.
   local _bin_dir="$HOME/.local/bin"
   local _bin_name
-  _bin_name="clashrup"
+  _bin_name="mihoro"
   ensure mkdir -p "$_bin_dir"
   ensure cp "$_bin_name" "$_bin_dir"
-  echo "Installed clashrup to $_bin_dir"
+  echo "Installed mihoro to $_bin_dir"
 
   # Print success message and check $PATH.
   echo ""
-  echo "clashrup is installed!"
+  echo "mihoro is installed!"
   if ! echo ":$PATH:" | grep -Fq ":$_bin_dir:"; then
-    echo "NOTE: $_bin_dir is not on your \$PATH. clashrup will not work unless it is added to \$PATH."
+    echo "NOTE: $_bin_dir is not on your \$PATH. mihoro will not work unless it is added to \$PATH."
   fi
 }
 
-download_clashrup() {
+download_mihoro() {
   local _arch="$1"
 
   if check_cmd curl; then
@@ -76,7 +76,7 @@ download_clashrup() {
   fi
   need_cmd grep
 
-  local _releases_url="https://api.github.com/repos/spencerwooo/clashrup/releases/latest"
+  local _releases_url="https://api.github.com/repos/spencerwooo/mihoro/releases/latest"
   local _releases
   case "$_dld" in
   curl) _releases="$(curl -sL "$_releases_url")" ||
@@ -87,7 +87,7 @@ download_clashrup() {
 
   local _package_url
   _package_url="$(echo "$_releases" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$_arch")" ||
-    err "clashrup has not yet been packaged for your architecture ($_arch), please file an issue at https://github.com/spencerwooo/clashrup/issues"
+    err "mihoro has not yet been packaged for your architecture ($_arch), please file an issue at https://github.com/spencerwooo/mihoro/issues"
 
   local _ext
   case "$_package_url" in
@@ -96,7 +96,7 @@ download_clashrup() {
   *) err "unsupported package format: $_package_url" ;;
   esac
 
-  local _package="clashrup.$_ext"
+  local _package="mihoro.$_ext"
   case "$_dld" in
   curl) _releases="$(curl -sLo "$_package" "$_package_url")" || err "curl: failed to download $_package_url" ;;
   wget) _releases="$(wget -qO "$_package" "$_package_url")" || err "wget: failed to download $_package_url" ;;

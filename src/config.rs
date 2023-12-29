@@ -6,29 +6,29 @@ use colored::Colorize;
 use serde::Deserialize;
 use serde::Serialize;
 
-/// `clashrup` configurations.
+/// `mihoro` configurations.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
-    pub remote_clash_binary_url: String,
+    pub remote_mihomo_binary_url: String,
     pub remote_config_url: String,
     pub remote_mmdb_url: String,
-    pub clash_binary_path: String,
-    pub clash_config_root: String,
+    pub mihomo_binary_path: String,
+    pub mihomo_config_root: String,
     pub user_systemd_root: String,
-    pub clash_config: ClashConfig,
+    pub mihomo_config: MihomoConfig,
 }
 
-/// `clash` configurations (partial).
+/// `mihomo` configurations (partial).
 ///
-/// Referenced from https://github.com/Dreamacro/clash/wiki/configuration
+/// Referenced from https://github.com/Dreamacro/mihomo/wiki/configuration
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ClashConfig {
+pub struct MihomoConfig {
     pub port: u16,
     pub socks_port: u16,
     pub allow_lan: Option<bool>,
     pub bind_address: Option<String>,
-    mode: ClashMode,
-    log_level: ClashLogLevel,
+    mode: MihomoMode,
+    log_level: MihomoLogLevel,
     ipv6: Option<bool>,
     external_controller: Option<String>,
     external_ui: Option<String>,
@@ -36,7 +36,7 @@ pub struct ClashConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum ClashMode {
+pub enum MihomoMode {
     #[serde(alias = "global", rename(serialize = "global"))]
     Global,
     #[serde(alias = "rule", rename(serialize = "rule"))]
@@ -46,7 +46,7 @@ pub enum ClashMode {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum ClashLogLevel {
+pub enum MihomoLogLevel {
     #[serde(alias = "silent", rename(serialize = "silent"))]
     Silent,
     #[serde(alias = "error", rename(serialize = "error"))]
@@ -62,21 +62,21 @@ pub enum ClashLogLevel {
 impl Config {
     pub fn new() -> Config {
         Config {
-            remote_clash_binary_url: String::from(""),
+            remote_mihomo_binary_url: String::from(""),
             remote_config_url: String::from(""),
             remote_mmdb_url: String::from(
                 "https://cdn.jsdelivr.net/gh/Dreamacro/maxmind-geoip@release/Country.mmdb",
             ),
-            clash_binary_path: String::from("~/.local/bin/clash"),
-            clash_config_root: String::from("~/.config/clash"),
+            mihomo_binary_path: String::from("~/.local/bin/mihomo"),
+            mihomo_config_root: String::from("~/.config/mihomo"),
             user_systemd_root: String::from("~/.config/systemd/user"),
-            clash_config: ClashConfig {
+            mihomo_config: MihomoConfig {
                 port: 7890,
                 socks_port: 7891,
                 allow_lan: Some(false),
                 bind_address: Some(String::from("*")),
-                mode: ClashMode::Rule,
-                log_level: ClashLogLevel::Info,
+                mode: MihomoMode::Rule,
+                log_level: MihomoLogLevel::Info,
                 ipv6: Some(false),
                 external_controller: Some(String::from("127.0.0.1:9090")),
                 external_ui: None,
@@ -108,7 +108,7 @@ pub enum ConfigError {
     ParseError,
 }
 
-/// Tries to parse clashrup config as toml from path.
+/// Tries to parse mihoro config as toml from path.
 ///
 /// * If config file does not exist, creates default config file to path and returns error.
 /// * If found, tries to parse the file and returns error if parse fails or fields found undefined.
@@ -119,7 +119,7 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
         fs::create_dir_all(parent_dir).unwrap();
     }
 
-    // Create clashrup default config if not exists
+    // Create mihoro default config if not exists
     let config_path = Path::new(path);
     if !config_path.exists() {
         Config::new().write(config_path);
@@ -138,8 +138,8 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
             let required_urls = [
                 ("remote_config_url", &config.remote_config_url),
                 ("remote_mmdb_url", &config.remote_mmdb_url),
-                ("clash_binary_path", &config.clash_binary_path),
-                ("clash_config_root", &config.clash_config_root),
+                ("mihomo_binary_path", &config.mihomo_binary_path),
+                ("mihomo_config_root", &config.mihomo_config_root),
                 ("user_systemd_root", &config.user_systemd_root),
             ];
 
@@ -159,12 +159,12 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
     }
 }
 
-/// `ClashYamlConfig` is defined to support serde serialization and deserialization of arbitrary
-/// clash `config.yaml`, with support for fields defined in `ClashConfig` for overrides and also
-/// extra fields that are not managed by `clashrup` by design (namely `proxies`, `proxy-groups`,
+/// `mihomoYamlConfig` is defined to support serde serialization and deserialization of arbitrary
+/// mihomo `config.yaml`, with support for fields defined in `mihomoConfig` for overrides and also
+/// extra fields that are not managed by `mihoro` by design (namely `proxies`, `proxy-groups`,
 /// `rules`, etc.)
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ClashYamlConfig {
+pub struct MihomoYamlConfig {
     port: Option<u16>,
 
     #[serde(rename = "socks-port")]
@@ -176,10 +176,10 @@ pub struct ClashYamlConfig {
     #[serde(rename = "bind-address", skip_serializing_if = "Option::is_none")]
     bind_address: Option<String>,
 
-    mode: Option<ClashMode>,
+    mode: Option<MihomoMode>,
 
     #[serde(rename = "log-level")]
-    log_level: Option<ClashLogLevel>,
+    log_level: Option<MihomoLogLevel>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     ipv6: Option<bool>,
@@ -200,31 +200,31 @@ pub struct ClashYamlConfig {
     extra: HashMap<String, serde_yaml::Value>,
 }
 
-/// Apply config overrides to clash's `config.yaml`.
+/// Apply config overrides to mihomo's `config.yaml`.
 ///
-/// Only a subset of clash's config fields are supported, as defined in `ClashConfig`.
+/// Only a subset of mihomo's config fields are supported, as defined in `mihomoConfig`.
 ///
 /// Rules:
-/// * Fields defined in `clashrup.toml` will override the downloaded remote `config.yaml`.
+/// * Fields defined in `mihoro.toml` will override the downloaded remote `config.yaml`.
 /// * Fields undefined will be removed from the downloaded `config.yaml`.
-/// * Fields not supported by `clashrup` will be kept as is.
-pub fn apply_clash_override(path: &str, override_config: &ClashConfig) {
-    let raw_clash_yaml = fs::read_to_string(path).unwrap();
-    let mut clash_yaml: ClashYamlConfig = serde_yaml::from_str(&raw_clash_yaml).unwrap();
+/// * Fields not supported by `mihoro` will be kept as is.
+pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) {
+    let raw_mihomo_yaml = fs::read_to_string(path).unwrap();
+    let mut mihomo_yaml: MihomoYamlConfig = serde_yaml::from_str(&raw_mihomo_yaml).unwrap();
 
     // Apply config overrides
-    clash_yaml.port = Some(override_config.port);
-    clash_yaml.socks_port = Some(override_config.socks_port);
-    clash_yaml.allow_lan = override_config.allow_lan;
-    clash_yaml.bind_address = override_config.bind_address.clone();
-    clash_yaml.mode = Some(override_config.mode.clone());
-    clash_yaml.log_level = Some(override_config.log_level.clone());
-    clash_yaml.ipv6 = override_config.ipv6;
-    clash_yaml.external_controller = override_config.external_controller.clone();
-    clash_yaml.external_ui = override_config.external_ui.clone();
-    clash_yaml.secret = override_config.secret.clone();
+    mihomo_yaml.port = Some(override_config.port);
+    mihomo_yaml.socks_port = Some(override_config.socks_port);
+    mihomo_yaml.allow_lan = override_config.allow_lan;
+    mihomo_yaml.bind_address = override_config.bind_address.clone();
+    mihomo_yaml.mode = Some(override_config.mode.clone());
+    mihomo_yaml.log_level = Some(override_config.log_level.clone());
+    mihomo_yaml.ipv6 = override_config.ipv6;
+    mihomo_yaml.external_controller = override_config.external_controller.clone();
+    mihomo_yaml.external_ui = override_config.external_ui.clone();
+    mihomo_yaml.secret = override_config.secret.clone();
 
     // Write to file
-    let serialized_clash_yaml = serde_yaml::to_string(&clash_yaml).unwrap();
-    fs::write(path, serialized_clash_yaml).unwrap();
+    let serialized_mihomo_yaml = serde_yaml::to_string(&mihomo_yaml).unwrap();
+    fs::write(path, serialized_mihomo_yaml).unwrap();
 }

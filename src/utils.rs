@@ -117,45 +117,45 @@ pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) {
     );
 }
 
-/// Create a systemd service file for running clash as a service.
+/// Create a systemd service file for running mihomo as a service.
 ///
-/// By default, user systemd services are created under `~/.config/systemd/user/clash.service` and
-/// invoked with `systemctl --user start clash.service`. Directory is created if not present.
+/// By default, user systemd services are created under `~/.config/systemd/user/mihomo.service` and
+/// invoked with `systemctl --user start mihomo.service`. Directory is created if not present.
 ///
-/// Reference: https://github.com/Dreamacro/clash/wiki/Running-Clash-as-a-service
-pub fn create_clash_service(
-    clash_binary_path: &str,
-    clash_config_root: &str,
-    clash_service_path: &str,
+/// Reference: https://github.com/Dreamacro/mihomo/wiki/Running-mihomo-as-a-service
+pub fn create_mihomo_service(
+    mihomo_binary_path: &str,
+    mihomo_config_root: &str,
+    mihomo_service_path: &str,
     prefix: &str,
 ) {
     let service = format!(
         "[Unit]
-Description=Clash - A rule-based tunnel in Go.
+Description=mihomo - A rule-based tunnel in Go.
 After=network.target
 
 [Service]
 Type=simple
-ExecStart={clash_binary_path} -d {clash_config_root}
+ExecStart={mihomo_binary_path} -d {mihomo_config_root}
 Restart=always
 
 [Install]
 WantedBy=default.target"
     );
 
-    // Create clash service directory if not exists
-    let clash_service_dir = Path::new(clash_service_path).parent().unwrap();
-    if !clash_service_dir.exists() {
-        fs::create_dir_all(clash_service_dir).unwrap();
+    // Create mihomo service directory if not exists
+    let mihomo_service_dir = Path::new(mihomo_service_path).parent().unwrap();
+    if !mihomo_service_dir.exists() {
+        fs::create_dir_all(mihomo_service_dir).unwrap();
     }
 
-    // Write clash.service contents to file
-    fs::write(clash_service_path, service).unwrap();
+    // Write mihomo.service contents to file
+    fs::write(mihomo_service_path, service).unwrap();
 
     println!(
-        "{} Created clash.service at {}",
+        "{} Created mihomo.service at {}",
         prefix.green(),
-        clash_service_path.underline().yellow()
+        mihomo_service_path.underline().yellow()
     );
 }
 

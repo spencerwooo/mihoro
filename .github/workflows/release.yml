@@ -15,27 +15,27 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
-            name: clashrup-x86_64-unknown-linux-gnu.tar.gz
+            name: mihoro-x86_64-unknown-linux-gnu.tar.gz
             cross: false
             strip: true
           - target: x86_64-unknown-linux-musl
-            name: clashrup-x86_64-unknown-linux-musl.tar.gz
+            name: mihoro-x86_64-unknown-linux-musl.tar.gz
             cross: true
             strip: true
           - target: i686-unknown-linux-gnu
-            name: clashrup-i686-unknown-linux-gnu.tar.gz
+            name: mihoro-i686-unknown-linux-gnu.tar.gz
             cross: true
             strip: true
           - target: i686-unknown-linux-musl
-            name: clashrup-i686-unknown-linux-musl.tar.gz
+            name: mihoro-i686-unknown-linux-musl.tar.gz
             cross: true
             strip: true
           - target: aarch64-unknown-linux-gnu
-            name: clashrup-aarch64-unknown-linux-gnu.tar.gz
+            name: mihoro-aarch64-unknown-linux-gnu.tar.gz
             cross: true
             strip: false
           - target: aarch64-unknown-linux-musl
-            name: clashrup-aarch64-unknown-linux-musl.tar.gz
+            name: mihoro-aarch64-unknown-linux-musl.tar.gz
             cross: true
             strip: false
 
@@ -53,13 +53,13 @@ jobs:
           use-cross: ${{ matrix.cross }}
 
       - name: Strip binaries
-        run: strip target/${{ matrix.target }}/release/clashrup
+        run: strip target/${{ matrix.target }}/release/mihoro
         if: ${{ matrix.strip }}
 
       - name: Package binaries
         run: |
           cd target/${{ matrix.target }}/release
-          tar -czvf ${{ matrix.name }} clashrup
+          tar -czvf ${{ matrix.name }} mihoro
           cd -
 
       - name: Upload binaries to release
