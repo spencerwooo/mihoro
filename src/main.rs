@@ -50,7 +50,7 @@ async fn cli() -> Result<()> {
     let config_path = tilde(&args.mihoro_config).to_string();
 
     // Initial setup and parse config file
-    let config: Config = parse_config(&config_path, prefix)?;
+    let config: Config = parse_config(&config_path)?;
 
     // Expand mihomo related paths and target directories
     let mihomo_gzipped_path = "mihomo.tar.gz";
@@ -59,8 +59,8 @@ async fn cli() -> Result<()> {
     let mihomo_target_config_root = tilde(&config.mihomo_config_root).to_string();
     let mihomo_target_config_path =
         tilde(&format!("{}/config.yaml", config.mihomo_config_root)).to_string();
-    let mihomo_target_mmdb_path =
-        tilde(&format!("{}/Country.mmdb", config.mihomo_config_root)).to_string();
+    // let mihomo_target_mmdb_path =
+    //     tilde(&format!("{}/Country.mmdb", config.mihomo_config_root)).to_string();
     let mihomo_target_service_path =
         tilde(&format!("{}/mihomo.service", config.user_systemd_root)).to_string();
 
@@ -110,9 +110,6 @@ async fn cli() -> Result<()> {
             .await?;
             apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config)?;
 
-            // Download remote Country.mmdb
-            download_file(&client, &config.remote_mmdb_url, &mihomo_target_mmdb_path).await?;
-
             // Create mihomo.service systemd file
             create_mihomo_service(
                 &mihomo_target_binary_path,
@@ -135,65 +132,52 @@ async fn cli() -> Result<()> {
             apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config)?;
             println!("{} Updated and applied config overrides", prefix.yellow());
 
-            // Download remote Country.mmdb
-            download_file(&client, &config.remote_mmdb_url, &mihomo_target_mmdb_path).await?;
-
             // Restart mihomo systemd service
             println!("{} Restart mihomo.service", prefix.green());
             Systemctl::new().restart("mihomo.service").execute()?;
         }
         Some(Commands::Apply) => {
             // Apply mihomo config override
-            apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config).and_then(
-                |_| {
-                    println!("{} Applied mihomo config overrides", prefix.green().bold());
-                    Ok(())
-                },
-            )?;
+            apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config).map(|_| {
+                println!("{} Applied mihomo config overrides", prefix.green().bold());
+            })?;
 
             // Restart mihomo systemd service
             Systemctl::new()
                 .restart("mihomo.service")
                 .execute()
-                .and_then(|_| {
+                .map(|_| {
                     println!("{} Restarted mihomo.service", prefix.green().bold());
-                    Ok(())
                 })?;
         }
         Some(Commands::Start) => {
             Systemctl::new()
                 .start("mihomo.service")
                 .execute()
-                .and_then(|_| {
+                .map(|_| {
                     println!("{} Started mihomo.service", prefix.green());
-                    Ok(())
                 })?;
         }
         Some(Commands::Status) => {
             Systemctl::new().status("mihomo.service").execute()?;
         }
         Some(Commands::Stop) => {
-            Systemctl::new()
-                .stop("mihomo.service")
-                .execute()
-                .and_then(|_| {
-                    println!("{} Stopped mihomo.service", prefix.green());
-                    Ok(())
-                })?;
+            Systemctl::new().stop("mihomo.service").execute().map(|_| {
+                println!("{} Stopped mihomo.service", prefix.green());
+            })?;
         }
         Some(Commands::Restart) => {
             Systemctl::new()
                 .restart("mihomo.service")
                 .execute()
-                .and_then(|_| {
+                .map(|_| {
                     println!("{} Restarted mihomo.service", prefix.green());
-                    Ok(())
                 })?;
         }
         Some(Commands::Log) => {
             Command::new("journalctl")
                 .arg("--user")
-                .arg("-u")
+                .arg("-xeu")
                 .arg("mihomo.service")
                 .arg("-n")
                 .arg("10")

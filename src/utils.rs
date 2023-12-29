@@ -101,9 +101,8 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<()>
 pub fn delete_file(path: &str, prefix: &str) -> Result<()> {
     // Delete file if exists
     if Path::new(path).exists() {
-        fs::remove_file(path).and_then(|_| {
+        fs::remove_file(path).map(|_| {
             println!("{} Removed {}", prefix.red(), path.underline().yellow());
-            Ok(())
         })?;
     }
     Ok(())
@@ -147,15 +146,13 @@ After=network.target NetworkManager.service systemd-networkd.service iwd.service
 Type=simple
 LimitNPROC=500
 LimitNOFILE=1000000
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME
 Restart=always
 ExecStartPre=/usr/bin/sleep 1s
 ExecStart={} -d {}
 ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
-WantedBy=multi-user.target",
+WantedBy=default.target",
         mihomo_binary_path, mihomo_config_root
     );
 

@@ -15,7 +15,6 @@ use crate::utils::create_parent_dir;
 pub struct Config {
     pub remote_mihomo_binary_url: String,
     pub remote_config_url: String,
-    pub remote_mmdb_url: String,
     pub mihomo_binary_path: String,
     pub mihomo_config_root: String,
     pub user_systemd_root: String,
@@ -68,9 +67,6 @@ impl Config {
         Config {
             remote_mihomo_binary_url: String::from(""),
             remote_config_url: String::from(""),
-            remote_mmdb_url: String::from(
-                "https://cdn.jsdelivr.net/gh/Dreamacro/maxmind-geoip@release/Country.mmdb",
-            ),
             mihomo_binary_path: String::from("~/.local/bin/mihomo"),
             mihomo_config_root: String::from("~/.config/mihomo"),
             user_systemd_root: String::from("~/.config/systemd/user"),
@@ -81,20 +77,15 @@ impl Config {
                 bind_address: Some(String::from("*")),
                 mode: MihomoMode::Rule,
                 log_level: MihomoLogLevel::Info,
-                ipv6: Some(false),
-                external_controller: Some(String::from("127.0.0.1:9090")),
-                external_ui: None,
+                ipv6: Some(true),
+                external_controller: Some(String::from("0.0.0.0:9090")),
+                external_ui: Some(String::from("ui")),
                 secret: None,
             },
         }
     }
 
     /// Read raw config string from path and parse with crate toml.
-    ///
-    /// TODO: Currently this will return error that shows a missing field error when parse fails,
-    /// however the error message always shows the line and column number as `line 1 column 1`,
-    /// which is because the function `fs::read_to_string` preserves newline characters as `\n`,
-    /// resulting in a single-lined string.
     pub fn setup_from(path: &str) -> Result<Config> {
         let raw_config = fs::read_to_string(path)?;
         let config: Config = toml::from_str(&raw_config)?;
@@ -112,7 +103,7 @@ impl Config {
 ///
 /// * If config file does not exist, creates default config file to path and returns error.
 /// * If found, tries to parse the file and returns error if parse fails or fields found undefined.
-pub fn parse_config(path: &str, prefix: &str) -> Result<Config> {
+pub fn parse_config(path: &str) -> Result<Config> {
     // Create `~/.config` directory if not exists
     create_parent_dir(path)?;
 
@@ -121,8 +112,7 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config> {
     if !config_path.exists() {
         Config::new().write(config_path)?;
         bail!(
-            "{prefix} Created default config at `{path}`, edit as needed\n{prefix} Run again to finish setup",
-            prefix = prefix.yellow(),
+            "created default config at `{path}`, run again to finish setup",
             path = path.underline()
         );
     }
@@ -131,7 +121,7 @@ pub fn parse_config(path: &str, prefix: &str) -> Result<Config> {
     let config = Config::setup_from(path)?;
     let required_urls = [
         ("remote_config_url", &config.remote_config_url),
-        ("remote_mmdb_url", &config.remote_mmdb_url),
+        // ("remote_mmdb_url", &config.remote_mmdb_url),
         ("mihomo_binary_path", &config.mihomo_binary_path),
         ("mihomo_config_root", &config.mihomo_config_root),
         ("user_systemd_root", &config.user_systemd_root),
