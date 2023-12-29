@@ -5,6 +5,8 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 
+use anyhow::Context;
+use anyhow::Result;
 use clap_complete::shells::Shell;
 use colored::Colorize;
 use flate2::read::GzDecoder;
@@ -13,6 +15,16 @@ use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
 use reqwest::Client;
 use truncatable::Truncatable;
+
+pub fn create_parent_dir(path: &str) -> Result<()> {
+    let parent_dir = Path::new(path)
+        .parent()
+        .with_context(|| format!("parent directory of `{}` invalid", path))?;
+    if !parent_dir.exists() {
+        fs::create_dir_all(parent_dir)?;
+    }
+    Ok(())
+}
 
 /// Download file from url to path with a reusable http client.
 ///
@@ -25,19 +37,16 @@ use truncatable::Truncatable;
 ///
 /// Note: Allow `clippy::unused_io_amount` because we are writing downloaded chunks on the fly.
 #[allow(clippy::unused_io_amount)]
-pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<(), String> {
+pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<()> {
     // Create parent directory for download destination if not exists
-    let parent_dir = Path::new(path).parent().unwrap();
-    if !parent_dir.exists() {
-        fs::create_dir_all(parent_dir).unwrap();
-    }
+    create_parent_dir(path)?;
 
     // Create shared http client for multiple downloads when possible
     let res = client
         .get(url)
         .send()
         .await
-        .or(Err(format!("Failed to GET from '{}'", &url)))?;
+        .with_context(|| format!("failed to GET from '{}'", &url))?;
 
     // If content length is not available or 0, use a spinner instead of a progress bar
     let total_size = res.content_length().unwrap_or(0);
@@ -46,14 +55,12 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<(),
     let bar_style = ProgressStyle::with_template(
         "{prefix:.blue}: {msg}\n          {elapsed_precise} [{bar:30.white/blue}] \
          {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
-    )
-    .unwrap()
+    )?
     .progress_chars("-  ");
     let spinner_style = ProgressStyle::with_template(
         "{prefix:.blue}: {wide_msg}\n        \
          {spinner} {elapsed_precise} - Download speed {bytes_per_sec}",
-    )
-    .unwrap();
+    )?;
 
     if total_size == 0 {
         pb.set_style(spinner_style);
@@ -69,14 +76,15 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<(),
     pb.set_message(format!("Downloading {truncated_url}"));
 
     // Start file download and update progress bar when new data chunk is received
-    let mut file = File::create(path).unwrap();
+    let mut file = File::create(path)?;
     let mut downloaded: u64 = 0;
     let mut stream = res.bytes_stream();
 
     while let Some(item) = stream.next().await {
-        let chunk = item.or(Err("Error while downloading file"))?;
+        let chunk = item.with_context(|| "error while downloading file")?;
 
-        file.write(&chunk).or(Err("Error while writing to file"))?;
+        file.write(&chunk)
+            .with_context(|| "error while writing to file")?;
         if total_size != 0 {
             let new = min(downloaded + (chunk.len() as u64), total_size);
             downloaded = new;
@@ -90,31 +98,32 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<(),
     Ok(())
 }
 
-pub fn delete_file(path: &str, prefix: &str) {
+pub fn delete_file(path: &str, prefix: &str) -> Result<()> {
     // Delete file if exists
     if Path::new(path).exists() {
-        fs::remove_file(path).unwrap();
-        println!("{} Removed {}", prefix.red(), path.underline().yellow());
+        fs::remove_file(path).and_then(|_| {
+            println!("{} Removed {}", prefix.red(), path.underline().yellow());
+            Ok(())
+        })?;
     }
+    Ok(())
 }
 
-pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) {
+pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) -> Result<()> {
     // Create parent directory for extraction dest if not exists
-    let parent_dir = Path::new(filename).parent().unwrap();
-    if !parent_dir.exists() {
-        fs::create_dir_all(parent_dir).unwrap();
-    }
+    create_parent_dir(filename)?;
 
     // Extract gzip file
-    let mut archive = GzDecoder::new(fs::File::open(gzip_path).unwrap());
-    let mut file = fs::File::create(filename).unwrap();
-    io::copy(&mut archive, &mut file).unwrap();
-    fs::remove_file(gzip_path).unwrap();
+    let mut archive = GzDecoder::new(fs::File::open(gzip_path)?);
+    let mut file = fs::File::create(filename)?;
+    io::copy(&mut archive, &mut file)?;
+    fs::remove_file(gzip_path)?;
     println!(
         "{} Extracted to {}",
         prefix.green(),
         filename.underline().yellow()
     );
+    Ok(())
 }
 
 /// Create a systemd service file for running mihomo as a service.
@@ -122,41 +131,46 @@ pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) {
 /// By default, user systemd services are created under `~/.config/systemd/user/mihomo.service` and
 /// invoked with `systemctl --user start mihomo.service`. Directory is created if not present.
 ///
-/// Reference: https://github.com/Dreamacro/mihomo/wiki/Running-mihomo-as-a-service
+/// Reference: https://wiki.metacubex.one/startup/service/
 pub fn create_mihomo_service(
     mihomo_binary_path: &str,
     mihomo_config_root: &str,
     mihomo_service_path: &str,
     prefix: &str,
-) {
+) -> Result<()> {
     let service = format!(
         "[Unit]
-Description=mihomo - A rule-based tunnel in Go.
-After=network.target
+Description=mihomo Daemon, Another Clash Kernel.
+After=network.target NetworkManager.service systemd-networkd.service iwd.service
 
 [Service]
 Type=simple
-ExecStart={mihomo_binary_path} -d {mihomo_config_root}
+LimitNPROC=500
+LimitNOFILE=1000000
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_TIME
 Restart=always
+ExecStartPre=/usr/bin/sleep 1s
+ExecStart={} -d {}
+ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
-WantedBy=default.target"
+WantedBy=multi-user.target",
+        mihomo_binary_path, mihomo_config_root
     );
 
     // Create mihomo service directory if not exists
-    let mihomo_service_dir = Path::new(mihomo_service_path).parent().unwrap();
-    if !mihomo_service_dir.exists() {
-        fs::create_dir_all(mihomo_service_dir).unwrap();
-    }
+    create_parent_dir(mihomo_service_path)?;
 
     // Write mihomo.service contents to file
-    fs::write(mihomo_service_path, service).unwrap();
+    fs::write(mihomo_service_path, service)?;
 
     println!(
         "{} Created mihomo.service at {}",
         prefix.green(),
         mihomo_service_path.underline().yellow()
     );
+    Ok(())
 }
 
 pub fn proxy_export_cmd(hostname: &str, http_port: &u16, socks_port: &u16) -> String {

@@ -2,9 +2,13 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+use anyhow::bail;
+use anyhow::Result;
 use colored::Colorize;
 use serde::Deserialize;
 use serde::Serialize;
+
+use crate::utils::create_parent_dir;
 
 /// `mihoro` configurations.
 #[derive(Serialize, Deserialize, Debug)]
@@ -91,72 +95,56 @@ impl Config {
     /// however the error message always shows the line and column number as `line 1 column 1`,
     /// which is because the function `fs::read_to_string` preserves newline characters as `\n`,
     /// resulting in a single-lined string.
-    pub fn setup_from(path: &str) -> Result<Config, toml::de::Error> {
-        let raw_config = fs::read_to_string(path).unwrap();
-        toml::from_str(&raw_config)
+    pub fn setup_from(path: &str) -> Result<Config> {
+        let raw_config = fs::read_to_string(path)?;
+        let config: Config = toml::from_str(&raw_config)?;
+        Ok(config)
     }
 
-    pub fn write(&mut self, path: &Path) {
-        let serialized_config = toml::to_string(&self).unwrap();
-        fs::write(path, serialized_config).unwrap();
+    pub fn write(&mut self, path: &Path) -> Result<()> {
+        let serialized_config = toml::to_string(&self)?;
+        fs::write(path, serialized_config)?;
+        Ok(())
     }
-}
-
-#[derive(Debug)]
-pub enum ConfigError {
-    FileMissing,
-    ParseError,
 }
 
 /// Tries to parse mihoro config as toml from path.
 ///
 /// * If config file does not exist, creates default config file to path and returns error.
 /// * If found, tries to parse the file and returns error if parse fails or fields found undefined.
-pub fn parse_config(path: &str, prefix: &str) -> Result<Config, ConfigError> {
+pub fn parse_config(path: &str, prefix: &str) -> Result<Config> {
     // Create `~/.config` directory if not exists
-    let parent_dir = Path::new(path).parent().unwrap();
-    if !parent_dir.exists() {
-        fs::create_dir_all(parent_dir).unwrap();
-    }
+    create_parent_dir(path)?;
 
     // Create mihoro default config if not exists
     let config_path = Path::new(path);
     if !config_path.exists() {
-        Config::new().write(config_path);
-        println!(
-            "{prefix} Created default config at {path}, edit as needed\n{prefix} Run again to finish setup",
+        Config::new().write(config_path)?;
+        bail!(
+            "{prefix} Created default config at `{path}`, edit as needed\n{prefix} Run again to finish setup",
             prefix = prefix.yellow(),
             path = path.underline()
         );
-        return Err(ConfigError::FileMissing);
     }
 
-    // Parse config file and validate if urls are defined
-    // println!("{} Reading config from {}", prefix.cyan(), path.underline());
-    match Config::setup_from(path) {
-        Ok(config) => {
-            let required_urls = [
-                ("remote_config_url", &config.remote_config_url),
-                ("remote_mmdb_url", &config.remote_mmdb_url),
-                ("mihomo_binary_path", &config.mihomo_binary_path),
-                ("mihomo_config_root", &config.mihomo_config_root),
-                ("user_systemd_root", &config.user_systemd_root),
-            ];
+    // Parse config file
+    let config = Config::setup_from(path)?;
+    let required_urls = [
+        ("remote_config_url", &config.remote_config_url),
+        ("remote_mmdb_url", &config.remote_mmdb_url),
+        ("mihomo_binary_path", &config.mihomo_binary_path),
+        ("mihomo_config_root", &config.mihomo_config_root),
+        ("user_systemd_root", &config.user_systemd_root),
+    ];
 
-            for (field, value) in required_urls.iter() {
-                if value.is_empty() {
-                    println!("{} `{}` undefined", "error:".red(), field);
-                    return Err(ConfigError::ParseError);
-                }
-            }
-
-            Ok(config)
-        }
-        Err(error) => {
-            println!("{} {}", "error:".red(), error);
-            Err(ConfigError::ParseError)
+    // Validate if urls are defined
+    for (field, value) in required_urls.iter() {
+        if value.is_empty() {
+            bail!("`{}` undefined", field)
         }
     }
+
+    Ok(config)
 }
 
 /// `mihomoYamlConfig` is defined to support serde serialization and deserialization of arbitrary
@@ -208,9 +196,9 @@ pub struct MihomoYamlConfig {
 /// * Fields defined in `mihoro.toml` will override the downloaded remote `config.yaml`.
 /// * Fields undefined will be removed from the downloaded `config.yaml`.
 /// * Fields not supported by `mihoro` will be kept as is.
-pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) {
-    let raw_mihomo_yaml = fs::read_to_string(path).unwrap();
-    let mut mihomo_yaml: MihomoYamlConfig = serde_yaml::from_str(&raw_mihomo_yaml).unwrap();
+pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Result<()> {
+    let raw_mihomo_yaml = fs::read_to_string(path)?;
+    let mut mihomo_yaml: MihomoYamlConfig = serde_yaml::from_str(&raw_mihomo_yaml)?;
 
     // Apply config overrides
     mihomo_yaml.port = Some(override_config.port);
@@ -225,6 +213,7 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) {
     mihomo_yaml.secret = override_config.secret.clone();
 
     // Write to file
-    let serialized_mihomo_yaml = serde_yaml::to_string(&mihomo_yaml).unwrap();
-    fs::write(path, serialized_mihomo_yaml).unwrap();
+    let serialized_mihomo_yaml = serde_yaml::to_string(&mihomo_yaml)?;
+    fs::write(path, serialized_mihomo_yaml)?;
+    Ok(())
 }

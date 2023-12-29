@@ -1,14 +1,14 @@
 [package]
 name = "mihoro"
 description = "Mihomo CLI client on Linux."
-version = "0.2.7"
+version = "0.3.0"
 edition = "2021"
 readme = "README.md"
 license = "MIT"
 authors = ["spencerwooo <spencer.woo@outlook.com>"]
 homepage = "https://github.com/spencerwooo/mihoro"
 repository = "https://github.com/spencerwooo/mihoro"
-keywords = ["cli", "clash", "network", "linux"]
+keywords = ["cli", "clash", "network", "linux", "mihomo"]
 categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -29,3 +29,4 @@ futures-util = "0.3"
 indicatif = "0.17"
 tokio = { version = "1.34", features = ["full"] }
 truncatable = "0.1"
+anyhow = "1.0.77"

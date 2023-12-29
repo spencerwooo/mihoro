@@ -8,6 +8,8 @@ use std::io;
 use std::os::unix::prelude::PermissionsExt;
 use std::process::Command;
 
+use anyhow::bail;
+use anyhow::Result;
 use clap::CommandFactory;
 use clap::Parser;
 use clap_complete::generate;
@@ -36,15 +38,19 @@ use utils::proxy_unset_cmd;
 
 #[tokio::main]
 async fn main() {
+    if let Err(err) = cli().await {
+        eprintln!("{} {}", "error:".bright_red().bold(), err);
+        std::process::exit(1);
+    }
+}
+
+async fn cli() -> Result<()> {
     let args = Args::parse();
     let prefix = "mihoro:";
     let config_path = tilde(&args.mihoro_config).to_string();
 
     // Initial setup and parse config file
-    let config: Config = match parse_config(&config_path, prefix) {
-        Ok(config) => config,
-        Err(_) => return,
-    };
+    let config: Config = parse_config(&config_path, prefix)?;
 
     // Expand mihomo related paths and target directories
     let mihomo_gzipped_path = "mihomo.tar.gz";
@@ -79,8 +85,7 @@ async fn main() {
             } else {
                 // Abort if `remote_mihomo_binary_url` is not defined in config
                 if config.remote_mihomo_binary_url.is_empty() {
-                    println!("{} `remote_mihomo_binary_url` undefined", "error:".red());
-                    return;
+                    bail!("`remote_mihomo_binary_url` undefined");
                 }
 
                 // Download mihomo binary and set permission to executable
@@ -89,12 +94,11 @@ async fn main() {
                     &config.remote_mihomo_binary_url,
                     mihomo_gzipped_path,
                 )
-                .await
-                .unwrap();
-                extract_gzip(mihomo_gzipped_path, &mihomo_target_binary_path, prefix);
+                .await?;
+                extract_gzip(mihomo_gzipped_path, &mihomo_target_binary_path, prefix)?;
 
                 let executable = fs::Permissions::from_mode(0o755);
-                fs::set_permissions(&mihomo_target_binary_path, executable).unwrap();
+                fs::set_permissions(&mihomo_target_binary_path, executable)?;
             }
 
             // Download remote mihomo config and apply override
@@ -103,14 +107,11 @@ async fn main() {
                 &config.remote_config_url,
                 &mihomo_target_config_path,
             )
-            .await
-            .unwrap();
-            apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config);
+            .await?;
+            apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config)?;
 
             // Download remote Country.mmdb
-            download_file(&client, &config.remote_mmdb_url, &mihomo_target_mmdb_path)
-                .await
-                .unwrap();
+            download_file(&client, &config.remote_mmdb_url, &mihomo_target_mmdb_path).await?;
 
             // Create mihomo.service systemd file
             create_mihomo_service(
@@ -118,10 +119,10 @@ async fn main() {
                 &mihomo_target_config_root,
                 &mihomo_target_service_path,
                 prefix,
-            );
+            )?;
 
-            Systemctl::new().enable("mihomo.service").execute();
-            Systemctl::new().start("mihomo.service").execute();
+            Systemctl::new().enable("mihomo.service").execute()?;
+            Systemctl::new().start("mihomo.service").execute()?;
         }
         Some(Commands::Update) => {
             // Download remote mihomo config and apply override
@@ -130,43 +131,64 @@ async fn main() {
                 &config.remote_config_url,
                 &mihomo_target_config_path,
             )
-            .await
-            .unwrap();
-            apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config);
+            .await?;
+            apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config)?;
             println!("{} Updated and applied config overrides", prefix.yellow());
 
             // Download remote Country.mmdb
-            download_file(&client, &config.remote_mmdb_url, &mihomo_target_mmdb_path)
-                .await
-                .unwrap();
+            download_file(&client, &config.remote_mmdb_url, &mihomo_target_mmdb_path).await?;
 
             // Restart mihomo systemd service
             println!("{} Restart mihomo.service", prefix.green());
-            Systemctl::new().restart("mihomo.service").execute();
+            Systemctl::new().restart("mihomo.service").execute()?;
         }
         Some(Commands::Apply) => {
             // Apply mihomo config override
-            apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config);
-            println!("{} Applied mihomo config overrides", prefix.yellow());
+            apply_mihomo_override(&mihomo_target_config_path, &config.mihomo_config).and_then(
+                |_| {
+                    println!("{} Applied mihomo config overrides", prefix.green().bold());
+                    Ok(())
+                },
+            )?;
 
             // Restart mihomo systemd service
-            println!("{} Restart mihomo.service", prefix.green());
-            Systemctl::new().restart("mihomo.service").execute();
+            Systemctl::new()
+                .restart("mihomo.service")
+                .execute()
+                .and_then(|_| {
+                    println!("{} Restarted mihomo.service", prefix.green().bold());
+                    Ok(())
+                })?;
         }
         Some(Commands::Start) => {
-            Systemctl::new().start("mihomo.service").execute();
-            println!("{} Started mihomo.service", prefix.green());
+            Systemctl::new()
+                .start("mihomo.service")
+                .execute()
+                .and_then(|_| {
+                    println!("{} Started mihomo.service", prefix.green());
+                    Ok(())
+                })?;
         }
         Some(Commands::Status) => {
-            Systemctl::new().status("mihomo.service").execute();
+            Systemctl::new().status("mihomo.service").execute()?;
         }
         Some(Commands::Stop) => {
-            Systemctl::new().stop("mihomo.service").execute();
-            println!("{} Stopped mihomo.service", prefix.green());
+            Systemctl::new()
+                .stop("mihomo.service")
+                .execute()
+                .and_then(|_| {
+                    println!("{} Stopped mihomo.service", prefix.green());
+                    Ok(())
+                })?;
         }
         Some(Commands::Restart) => {
-            Systemctl::new().restart("mihomo.service").execute();
-            println!("{} Restarted mihomo.service", prefix.green());
+            Systemctl::new()
+                .restart("mihomo.service")
+                .execute()
+                .and_then(|_| {
+                    println!("{} Restarted mihomo.service", prefix.green());
+                    Ok(())
+                })?;
         }
         Some(Commands::Log) => {
             Command::new("journalctl")
@@ -178,8 +200,7 @@ async fn main() {
                 .arg("-f")
                 .spawn()
                 .expect("failed to execute process")
-                .wait()
-                .unwrap();
+                .wait()?;
         }
         Some(Commands::Proxy { proxy }) => match proxy {
             Some(ProxyCommands::Export) => {
@@ -194,12 +215,10 @@ async fn main() {
             }
             Some(ProxyCommands::ExportLan) => {
                 if !config.mihomo_config.allow_lan.unwrap_or(false) {
-                    println!(
-                        "{} `allow_lan` is false, edit {} and `mihoro apply` to enable",
-                        prefix.red(),
+                    bail!(
+                        "`allow_lan` is false, edit {} and `mihoro apply` to enable",
                         config_path.underline().yellow()
                     );
-                    return;
                 }
 
                 let hostname = local_ip();
@@ -224,16 +243,16 @@ async fn main() {
             }
         },
         Some(Commands::Uninstall) => {
-            Systemctl::new().stop("mihomo.service").execute();
-            Systemctl::new().disable("mihomo.service").execute();
+            Systemctl::new().stop("mihomo.service").execute()?;
+            Systemctl::new().disable("mihomo.service").execute()?;
 
             // delete_file(&mihomo_target_binary_path, prefix);
-            delete_file(&mihomo_target_service_path, prefix);
-            delete_file(&mihomo_target_config_path, prefix);
+            delete_file(&mihomo_target_service_path, prefix)?;
+            delete_file(&mihomo_target_config_path, prefix)?;
 
             println!("{} Disable and reload systemd services", prefix.green());
-            Systemctl::new().daemon_reload().execute();
-            Systemctl::new().reset_failed().execute();
+            Systemctl::new().daemon_reload().execute()?;
+            Systemctl::new().reset_failed().execute()?;
         }
         Some(Commands::Completions { shell }) => match shell {
             Some(ClapShell::Bash) => {
@@ -245,12 +264,9 @@ async fn main() {
             Some(ClapShell::Fish) => {
                 generate(Fish, &mut Args::command(), "mihoro", &mut io::stdout())
             }
-            _ => {
-                println!("{} No shell specified, --help for usage", prefix.red());
-            }
+            _ => println!("{} No shell specified, --help for usage", prefix.red()),
         },
-        None => {
-            println!("{} No command specified, --help for usage", prefix.yellow());
-        }
+        None => println!("{} No command specified, --help for usage", prefix.yellow()),
     }
+    Ok(())
 }

@@ -1,4 +1,8 @@
 use std::process::Command;
+use std::process::ExitStatus;
+
+use anyhow::Context;
+use anyhow::Result;
 
 pub struct Systemctl {
     systemctl: Command,
@@ -51,11 +55,10 @@ impl Systemctl {
         self
     }
 
-    pub fn execute(&mut self) {
+    pub fn execute(&mut self) -> Result<ExitStatus> {
         self.systemctl
-            .spawn()
-            .expect("failed to execute process")
+            .spawn()?
             .wait()
-            .unwrap();
+            .with_context(|| "failed to execute systemctl")
     }
 }

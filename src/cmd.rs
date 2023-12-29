@@ -29,7 +29,7 @@ pub enum Commands {
     Restart,
     #[command(about = "Check mihomo.service logs with journalctl")]
     Log,
-    #[command(about = "Proxy export commands, `mihoro proxy --help` to see more")]
+    #[command(about = "Proxy export commands, `mihoro proxy --help` for details")]
     Proxy {
         #[command(subcommand)]
         proxy: Option<ProxyCommands>,
