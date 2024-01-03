@@ -15,7 +15,7 @@ pub struct Args {
 pub enum Commands {
     #[command(about = "Setup mihoro by downloading mihomo binary and remote config")]
     Setup,
-    #[command(about = "Update mihomo remote config, mmdb, and restart mihomo.service")]
+    #[command(about = "Update mihomo remote config and restart mihomo.service")]
     Update,
     #[command(about = "Apply mihomo config overrides and restart mihomo.service")]
     Apply,

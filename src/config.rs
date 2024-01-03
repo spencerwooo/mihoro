@@ -121,7 +121,6 @@ pub fn parse_config(path: &str) -> Result<Config> {
     let config = Config::setup_from(path)?;
     let required_urls = [
         ("remote_config_url", &config.remote_config_url),
-        // ("remote_mmdb_url", &config.remote_mmdb_url),
         ("mihomo_binary_path", &config.mihomo_binary_path),
         ("mihomo_config_root", &config.mihomo_config_root),
         ("user_systemd_root", &config.user_systemd_root),

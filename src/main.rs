@@ -59,8 +59,6 @@ async fn cli() -> Result<()> {
     let mihomo_target_config_root = tilde(&config.mihomo_config_root).to_string();
     let mihomo_target_config_path =
         tilde(&format!("{}/config.yaml", config.mihomo_config_root)).to_string();
-    // let mihomo_target_mmdb_path =
-    //     tilde(&format!("{}/Country.mmdb", config.mihomo_config_root)).to_string();
     let mihomo_target_service_path =
         tilde(&format!("{}/mihomo.service", config.user_systemd_root)).to_string();
 
@@ -223,7 +221,7 @@ async fn cli() -> Result<()> {
                 println!("{}", proxy_unset_cmd())
             }
             _ => {
-                println!("{} No proxy command, --help for ussage", prefix.red());
+                println!("{} No proxy command, --help for usage", prefix.red());
             }
         },
         Some(Commands::Uninstall) => {
@@ -234,9 +232,19 @@ async fn cli() -> Result<()> {
             delete_file(&mihomo_target_service_path, prefix)?;
             delete_file(&mihomo_target_config_path, prefix)?;
 
-            println!("{} Disable and reload systemd services", prefix.green());
             Systemctl::new().daemon_reload().execute()?;
             Systemctl::new().reset_failed().execute()?;
+            println!("{} Disabled and reloaded systemd services", prefix.green());
+            println!(
+                "{} You may need to remove mihomo binary and config directory manually",
+                prefix.green()
+            );
+
+            let remove_cmd = format!(
+                "rm -R {} {}",
+                mihomo_target_binary_path, mihomo_target_config_root
+            );
+            println!("{} `{}`", "->".dimmed(), remove_cmd.underline().bold());
         }
         Some(Commands::Completions { shell }) => match shell {
             Some(ClapShell::Bash) => {
