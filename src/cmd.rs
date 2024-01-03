@@ -1,8 +1,7 @@
-use clap::Parser;
-use clap::Subcommand;
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(author, about, version)]
+#[command(author, about, version, arg_required_else_help(true))]
 pub struct Args {
     /// Path to mihoro config file
     #[clap(short, long, default_value = "~/.config/mihoro.toml")]
@@ -13,30 +12,30 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    #[command(about = "Setup mihoro by downloading mihomo binary and remote config")]
+    /// Setup mihoro by downloading mihomo binary and remote config
     Setup,
-    #[command(about = "Update mihomo remote config and restart mihomo.service")]
+    /// Update mihomo remote config and restart mihomo.service
     Update,
-    #[command(about = "Apply mihomo config overrides and restart mihomo.service")]
+    /// Apply mihomo config overrides and restart mihomo.service
     Apply,
-    #[command(about = "Start mihomo.service with systemctl")]
+    /// Start mihomo.service with systemctl
     Start,
-    #[command(about = "Check mihomo.service status with systemctl")]
+    /// Check mihomo.service status with systemctl
     Status,
-    #[command(about = "Stop mihomo.service with systemctl")]
+    /// Stop mihomo.service with systemctl
     Stop,
-    #[command(about = "Restart mihomo.service with systemctl")]
+    /// Restart mihomo.service with systemctl
     Restart,
-    #[command(about = "Check mihomo.service logs with journalctl")]
+    /// Check mihomo.service logs with journalctl
     Log,
-    #[command(about = "Proxy export commands, `mihoro proxy --help` for details")]
+    /// Output proxy export commands
     Proxy {
-        #[command(subcommand)]
+        #[clap(subcommand)]
         proxy: Option<ProxyCommands>,
     },
-    #[command(about = "Uninstall and remove mihomo and config")]
+    /// Uninstall and remove mihoro and config
     Uninstall,
-    #[command(about = "Generate shell completions for mihoro")]
+    /// Generate shell completions for mihoro
     Completions {
         #[clap(subcommand)]
         shell: Option<ClapShell>,
@@ -44,22 +43,24 @@ pub enum Commands {
 }
 
 #[derive(Subcommand)]
+#[command(arg_required_else_help(true))]
 pub enum ProxyCommands {
-    #[command(about = "Output and copy proxy export shell commands")]
+    /// Output and copy proxy export shell commands
     Export,
-    #[command(about = "Output and copy proxy export shell commands for LAN access")]
+    /// Output and copy proxy export shell commands for LAN access
     ExportLan,
-    #[command(about = "Output and copy proxy unset shell commands")]
+    /// Output and copy proxy unset shell commands
     Unset,
 }
 
 #[derive(Subcommand)]
+#[command(arg_required_else_help(true))]
 pub enum ClapShell {
-    #[command(about = "Generate bash completions")]
+    /// Generate bash completions
     Bash,
-    #[command(about = "Generate fish completions")]
+    /// Generate fish completions
     Fish,
-    #[command(about = "Generate zsh completions")]
+    /// Generate zsh completions
     Zsh,
     // #[command(about = "Generate powershell completions")]
     // Powershell,

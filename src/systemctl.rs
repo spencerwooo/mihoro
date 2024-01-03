@@ -1,8 +1,6 @@
-use std::process::Command;
-use std::process::ExitStatus;
+use std::process::{Command, ExitStatus};
 
-use anyhow::Context;
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 pub struct Systemctl {
     systemctl: Command,

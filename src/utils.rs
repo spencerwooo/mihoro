@@ -1,21 +1,23 @@
-use std::cmp::min;
-use std::fs;
-use std::fs::File;
-use std::io;
-use std::io::Write;
-use std::path::Path;
+use std::{
+    cmp::min,
+    fs::{self, File},
+    io::{self, Write},
+    path::Path,
+};
 
-use anyhow::Context;
-use anyhow::Result;
-use clap_complete::shells::Shell;
+use anyhow::{Context, Result};
 use colored::Colorize;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
-use indicatif::ProgressBar;
-use indicatif::ProgressStyle;
+use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Client;
 use truncatable::Truncatable;
 
+/// Creates the parent directory for a given path if it does not exist.
+///
+/// # Arguments
+///
+/// * `path` - A string slice that holds the path for which the parent directory should be created.
 pub fn create_parent_dir(path: &str) -> Result<()> {
     let parent_dir = Path::new(path)
         .parent()
@@ -102,7 +104,7 @@ pub fn delete_file(path: &str, prefix: &str) -> Result<()> {
     // Delete file if exists
     if Path::new(path).exists() {
         fs::remove_file(path).map(|_| {
-            println!("{} Removed {}", prefix.red(), path.underline().yellow());
+            println!("{} Removed {}", prefix.cyan(), path.underline().yellow());
         })?;
     }
     Ok(())
@@ -123,87 +125,4 @@ pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) -> Result<()>
         filename.underline().yellow()
     );
     Ok(())
-}
-
-/// Create a systemd service file for running mihomo as a service.
-///
-/// By default, user systemd services are created under `~/.config/systemd/user/mihomo.service` and
-/// invoked with `systemctl --user start mihomo.service`. Directory is created if not present.
-///
-/// Reference: https://wiki.metacubex.one/startup/service/
-pub fn create_mihomo_service(
-    mihomo_binary_path: &str,
-    mihomo_config_root: &str,
-    mihomo_service_path: &str,
-    prefix: &str,
-) -> Result<()> {
-    let service = format!(
-        "[Unit]
-Description=mihomo Daemon, Another Clash Kernel.
-After=network.target NetworkManager.service systemd-networkd.service iwd.service
-
-[Service]
-Type=simple
-LimitNPROC=500
-LimitNOFILE=1000000
-Restart=always
-ExecStartPre=/usr/bin/sleep 1s
-ExecStart={} -d {}
-ExecReload=/bin/kill -HUP $MAINPID
-
-[Install]
-WantedBy=default.target",
-        mihomo_binary_path, mihomo_config_root
-    );
-
-    // Create mihomo service directory if not exists
-    create_parent_dir(mihomo_service_path)?;
-
-    // Write mihomo.service contents to file
-    fs::write(mihomo_service_path, service)?;
-
-    println!(
-        "{} Created mihomo.service at {}",
-        prefix.green(),
-        mihomo_service_path.underline().yellow()
-    );
-    Ok(())
-}
-
-pub fn proxy_export_cmd(hostname: &str, http_port: &u16, socks_port: &u16) -> String {
-    // Check current shell
-    let shell = Shell::from_env().unwrap_or(Shell::Bash);
-    match shell {
-        Shell::Fish => {
-            // For fish, use `set -gx $ENV_VAR value` to set environment variables
-            format!(
-                "set -gx https_proxy http://{hostname}:{http_port} \
-                set -gx http_proxy http://{hostname}:{http_port} \
-                set -gx all_proxy socks5://{hostname}:{socks_port}"
-            )
-        }
-        _ => {
-            // For all other shells (bash/zsh), use `export $ENV_VAR=value`
-            format!(
-                "export https_proxy=http://{hostname}:{http_port} \
-                http_proxy=http://{hostname}:{http_port} \
-                all_proxy=socks5://{hostname}:{socks_port}"
-            )
-        }
-    }
-}
-
-pub fn proxy_unset_cmd() -> String {
-    // Check current shell
-    let shell = Shell::from_env().unwrap_or(Shell::Bash);
-    match shell {
-        Shell::Fish => {
-            // For fish, use `set -e $ENV_VAR` to unset environment variables
-            "set -e https_proxy http_proxy all_proxy".to_owned()
-        }
-        _ => {
-            // For all other shells (bash/zsh), use `unset $ENV_VAR`
-            "unset https_proxy http_proxy all_proxy".to_owned()
-        }
-    }
 }

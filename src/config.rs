@@ -1,17 +1,13 @@
-use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
-
-use anyhow::bail;
-use anyhow::Result;
-use colored::Colorize;
-use serde::Deserialize;
-use serde::Serialize;
-
 use crate::utils::create_parent_dir;
 
+use std::{collections::HashMap, fs, path::Path};
+
+use anyhow::{bail, Result};
+use colored::Colorize;
+use serde::{Deserialize, Serialize};
+
 /// `mihoro` configurations.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub remote_mihomo_binary_url: String,
     pub remote_config_url: String,
@@ -24,7 +20,7 @@ pub struct Config {
 /// `mihomo` configurations (partial).
 ///
 /// Referenced from https://github.com/Dreamacro/mihomo/wiki/configuration
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MihomoConfig {
     pub port: u16,
     pub socks_port: u16,
