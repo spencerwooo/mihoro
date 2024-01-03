@@ -11,11 +11,12 @@ use clap_complete::{
     generate,
     shells::{Bash, Fish, Zsh},
 };
-use cmd::{Args, ClapShell, Commands};
 use colored::Colorize;
-use mihoro::Mihoro;
 use reqwest::Client;
 use std::{io, process::Command};
+
+use cmd::{Args, ClapShell, Commands};
+use mihoro::Mihoro;
 use systemctl::Systemctl;
 
 #[tokio::main]

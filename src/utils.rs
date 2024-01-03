@@ -104,7 +104,7 @@ pub fn delete_file(path: &str, prefix: &str) -> Result<()> {
     // Delete file if exists
     if Path::new(path).exists() {
         fs::remove_file(path).map(|_| {
-            println!("{} Removed {}", prefix.red(), path.underline().yellow());
+            println!("{} Removed {}", prefix.cyan(), path.underline().yellow());
         })?;
     }
     Ok(())
