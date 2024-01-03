@@ -1,17 +1,15 @@
-use std::cmp::min;
-use std::fs;
-use std::fs::File;
-use std::io;
-use std::io::Write;
-use std::path::Path;
+use std::{
+    cmp::min,
+    fs::{self, File},
+    io::{self, Write},
+    path::Path,
+};
 
-use anyhow::Context;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use colored::Colorize;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
-use indicatif::ProgressBar;
-use indicatif::ProgressStyle;
+use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Client;
 use truncatable::Truncatable;
 

@@ -1,14 +1,10 @@
-use std::collections::HashMap;
-use std::fs;
-use std::path::Path;
-
-use anyhow::bail;
-use anyhow::Result;
-use colored::Colorize;
-use serde::Deserialize;
-use serde::Serialize;
-
 use crate::utils::create_parent_dir;
+
+use std::{collections::HashMap, fs, path::Path};
+
+use anyhow::{bail, Result};
+use colored::Colorize;
+use serde::{Deserialize, Serialize};
 
 /// `mihoro` configurations.
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -5,23 +5,17 @@ mod proxy;
 mod systemctl;
 mod utils;
 
-use std::io;
-use std::process::Command;
-
 use anyhow::Result;
-use clap::CommandFactory;
-use clap::Parser;
-use clap_complete::generate;
-use clap_complete::shells::Bash;
-use clap_complete::shells::Fish;
-use clap_complete::shells::Zsh;
+use clap::{CommandFactory, Parser};
+use clap_complete::{
+    generate,
+    shells::{Bash, Fish, Zsh},
+};
+use cmd::{Args, ClapShell, Commands};
 use colored::Colorize;
-use reqwest::Client;
-
-use cmd::Args;
-use cmd::ClapShell;
-use cmd::Commands;
 use mihoro::Mihoro;
+use reqwest::Client;
+use std::{io, process::Command};
 use systemctl::Systemctl;
 
 #[tokio::main]

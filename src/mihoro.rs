@@ -28,7 +28,7 @@ pub struct Mihoro {
 
 impl Mihoro {
     pub fn new(config_path: &String) -> Result<Mihoro> {
-        let config = parse_config(&tilde(&config_path).to_string())?;
+        let config = parse_config(tilde(&config_path).as_ref())?;
         return Ok(Mihoro {
             prefix: String::from("mihoro:"),
             config: config.clone(),
