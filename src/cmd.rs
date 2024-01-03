@@ -2,7 +2,7 @@ use clap::Parser;
 use clap::Subcommand;
 
 #[derive(Parser)]
-#[command(author, about, version)]
+#[command(author, about, version, arg_required_else_help(true))]
 pub struct Args {
     /// Path to mihoro config file
     #[clap(short, long, default_value = "~/.config/mihoro.toml")]
@@ -29,12 +29,12 @@ pub enum Commands {
     Restart,
     #[command(about = "Check mihomo.service logs with journalctl")]
     Log,
-    #[command(about = "Proxy export commands, `mihoro proxy --help` for details")]
+    #[command(about = "Output proxy export commands")]
     Proxy {
-        #[command(subcommand)]
+        #[clap(subcommand)]
         proxy: Option<ProxyCommands>,
     },
-    #[command(about = "Uninstall and remove mihomo and config")]
+    #[command(about = "Uninstall and remove mihoro and config")]
     Uninstall,
     #[command(about = "Generate shell completions for mihoro")]
     Completions {
@@ -44,6 +44,7 @@ pub enum Commands {
 }
 
 #[derive(Subcommand)]
+#[command(arg_required_else_help(true))]
 pub enum ProxyCommands {
     #[command(about = "Output and copy proxy export shell commands")]
     Export,
@@ -54,6 +55,7 @@ pub enum ProxyCommands {
 }
 
 #[derive(Subcommand)]
+#[command(arg_required_else_help(true))]
 pub enum ClapShell {
     #[command(about = "Generate bash completions")]
     Bash,

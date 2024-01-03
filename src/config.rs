@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::utils::create_parent_dir;
 
 /// `mihoro` configurations.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub remote_mihomo_binary_url: String,
     pub remote_config_url: String,
@@ -24,7 +24,7 @@ pub struct Config {
 /// `mihomo` configurations (partial).
 ///
 /// Referenced from https://github.com/Dreamacro/mihomo/wiki/configuration
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MihomoConfig {
     pub port: u16,
     pub socks_port: u16,
