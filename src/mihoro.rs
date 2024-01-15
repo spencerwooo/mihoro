@@ -122,43 +122,40 @@ impl Mihoro {
     }
 
     pub async fn update_geodata(&self, client: Client) -> Result<()> {
-        match self.config.mihomo_config.geox_url.clone() {
-            Some(geox_url) => {
-                // Download geodata files based on `geodata_mode`
-                let geodata_mode = self.config.mihomo_config.geodata_mode.unwrap_or(false);
-                if geodata_mode {
-                    download_file(
-                        &client,
-                        &geox_url.geoip,
-                        format!("{}/geoip.dat", &self.mihomo_target_config_root).as_str(),
-                    )
-                    .await?;
-                    download_file(
-                        &client,
-                        &geox_url.geosite,
-                        format!("{}/geosite.dat", &self.mihomo_target_config_root).as_str(),
-                    )
-                    .await?;
-                } else {
-                    download_file(
-                        &client,
-                        &geox_url.mmdb,
-                        format!("{}/country.mmdb", &self.mihomo_target_config_root).as_str(),
-                    )
-                    .await?;
-                }
+        if let Some(geox_url) = self.config.mihomo_config.geox_url.clone() {
+            // Download geodata files based on `geodata_mode`
+            let geodata_mode = self.config.mihomo_config.geodata_mode.unwrap_or(false);
+            if geodata_mode {
+                download_file(
+                    &client,
+                    &geox_url.geoip,
+                    format!("{}/geoip.dat", &self.mihomo_target_config_root).as_str(),
+                )
+                .await?;
+                download_file(
+                    &client,
+                    &geox_url.geosite,
+                    format!("{}/geosite.dat", &self.mihomo_target_config_root).as_str(),
+                )
+                .await?;
+            } else {
+                download_file(
+                    &client,
+                    &geox_url.mmdb,
+                    format!("{}/country.mmdb", &self.mihomo_target_config_root).as_str(),
+                )
+                .await?;
+            }
 
-                println!("{} Downloaded and updated geodata", self.prefix.green());
-            }
-            None => {
-                println!(
-                    "{} `geox_url` undefined, refer to {}",
-                    self.prefix.yellow(),
-                    "'https://wiki.metacubex.one/config/general/#geo_3'"
-                        .bold()
-                        .underline()
-                );
-            }
+            println!("{} Downloaded and updated geodata", self.prefix.green());
+        } else {
+            println!(
+                "{} `geox_url` undefined, refer to {}",
+                self.prefix.yellow(),
+                "'https://wiki.metacubex.one/config/general/#geo_3'"
+                    .bold()
+                    .underline()
+            );
         }
         Ok(())
     }
