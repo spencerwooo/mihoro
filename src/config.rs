@@ -32,6 +32,10 @@ pub struct MihomoConfig {
     external_controller: Option<String>,
     external_ui: Option<String>,
     secret: Option<String>,
+    pub geodata_mode: Option<bool>,
+    pub geo_auto_update: Option<bool>,
+    pub geo_update_interval: Option<u16>,
+    pub geox_url: Option<GeoxUrl>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -58,6 +62,13 @@ pub enum MihomoLogLevel {
     Debug,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GeoxUrl {
+    pub geoip: String,
+    pub geosite: String,
+    pub mmdb: String,
+}
+
 impl Config {
     pub fn new() -> Config {
         Config {
@@ -66,6 +77,8 @@ impl Config {
             mihomo_binary_path: String::from("~/.local/bin/mihomo"),
             mihomo_config_root: String::from("~/.config/mihomo"),
             user_systemd_root: String::from("~/.config/systemd/user"),
+
+            // https://wiki.metacubex.one/config/general
             mihomo_config: MihomoConfig {
                 port: 7890,
                 socks_port: 7891,
@@ -77,6 +90,20 @@ impl Config {
                 external_controller: Some(String::from("0.0.0.0:9090")),
                 external_ui: Some(String::from("ui")),
                 secret: None,
+                geodata_mode: Some(false),
+                geo_auto_update: Some(true),
+                geo_update_interval: Some(24),
+                geox_url: Some(GeoxUrl {
+                    geoip: String::from(
+                        "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat",
+                    ),
+                    geosite: String::from(
+                        "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat",
+                    ),
+                    mmdb: String::from(
+                        "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb",
+                    ),
+                }),
             },
         }
     }

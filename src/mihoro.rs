@@ -44,7 +44,7 @@ impl Mihoro {
         });
     }
 
-    pub async fn setup(self, client: Client) -> Result<()> {
+    pub async fn setup(&self, client: Client) -> Result<()> {
         println!(
             "{} Setting up mihomo's binary, config, and systemd service...",
             &self.prefix.cyan()
@@ -85,6 +85,9 @@ impl Mihoro {
         .await?;
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
 
+        // Download geodata
+        self.update_geodata(client).await?;
+
         // Create mihomo.service systemd file
         create_mihomo_service(
             &self.mihomo_target_binary_path,
@@ -98,7 +101,7 @@ impl Mihoro {
         Ok(())
     }
 
-    pub async fn update(self, client: Client) -> Result<()> {
+    pub async fn update(&self, client: Client) -> Result<()> {
         // Download remote mihomo config and apply override
         download_file(
             &client,
@@ -118,7 +121,49 @@ impl Mihoro {
         Ok(())
     }
 
-    pub async fn apply(self) -> Result<()> {
+    pub async fn update_geodata(&self, client: Client) -> Result<()> {
+        match self.config.mihomo_config.geox_url.clone() {
+            Some(geox_url) => {
+                // Download geodata files based on `geodata_mode`
+                let geodata_mode = self.config.mihomo_config.geodata_mode.unwrap_or(false);
+                if geodata_mode {
+                    download_file(
+                        &client,
+                        &geox_url.geoip,
+                        format!("{}/geoip.dat", &self.mihomo_target_config_root).as_str(),
+                    )
+                    .await?;
+                    download_file(
+                        &client,
+                        &geox_url.geosite,
+                        format!("{}/geosite.dat", &self.mihomo_target_config_root).as_str(),
+                    )
+                    .await?;
+                } else {
+                    download_file(
+                        &client,
+                        &geox_url.mmdb,
+                        format!("{}/country.mmdb", &self.mihomo_target_config_root).as_str(),
+                    )
+                    .await?;
+                }
+
+                println!("{} Downloaded and updated geodata", self.prefix.green());
+            }
+            None => {
+                println!(
+                    "{} `geox_url` undefined, refer to {}",
+                    self.prefix.yellow(),
+                    "'https://wiki.metacubex.one/config/general/#geo_3'"
+                        .bold()
+                        .underline()
+                );
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn apply(&self) -> Result<()> {
         // Apply mihomo config override
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config).map(
             |_| {
@@ -139,7 +184,7 @@ impl Mihoro {
         Ok(())
     }
 
-    pub fn uninstall(self) -> Result<()> {
+    pub fn uninstall(&self) -> Result<()> {
         Systemctl::new().stop("mihomo.service").execute()?;
         Systemctl::new().disable("mihomo.service").execute()?;
 
@@ -165,7 +210,7 @@ impl Mihoro {
         Ok(())
     }
 
-    pub fn proxy_commands(self, proxy: &Option<ProxyCommands>) -> Result<()> {
+    pub fn proxy_commands(&self, proxy: &Option<ProxyCommands>) -> Result<()> {
         match proxy {
             Some(ProxyCommands::Export) => {
                 println!(
