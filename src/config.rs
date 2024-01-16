@@ -196,6 +196,21 @@ pub struct MihomoYamlConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     secret: Option<String>,
 
+    #[serde(rename = "geodata-mode", skip_serializing_if = "Option::is_none")]
+    geodata_mode: Option<bool>,
+
+    #[serde(rename = "geo-auto-update", skip_serializing_if = "Option::is_none")]
+    geo_auto_update: Option<bool>,
+
+    #[serde(
+        rename = "geo-update-interval",
+        skip_serializing_if = "Option::is_none"
+    )]
+    geo_update_interval: Option<u16>,
+
+    #[serde(rename = "geox-url", skip_serializing_if = "Option::is_none")]
+    geox_url: Option<GeoxUrl>,
+
     #[serde(flatten)]
     extra: HashMap<String, serde_yaml::Value>,
 }
@@ -223,6 +238,10 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Resu
     mihomo_yaml.external_controller = override_config.external_controller.clone();
     mihomo_yaml.external_ui = override_config.external_ui.clone();
     mihomo_yaml.secret = override_config.secret.clone();
+    mihomo_yaml.geodata_mode = override_config.geodata_mode;
+    mihomo_yaml.geo_auto_update = override_config.geo_auto_update;
+    mihomo_yaml.geo_update_interval = override_config.geo_update_interval;
+    mihomo_yaml.geox_url = override_config.geox_url.clone();
 
     // Write to file
     let serialized_mihomo_yaml = serde_yaml::to_string(&mihomo_yaml)?;
