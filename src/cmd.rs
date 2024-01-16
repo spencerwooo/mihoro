@@ -29,6 +29,7 @@ pub enum Commands {
     /// Restart mihomo.service with systemctl
     Restart,
     /// Check mihomo.service logs with journalctl
+    #[clap(visible_alias("logs"))]
     Log,
     /// Output proxy export commands
     Proxy {
