@@ -32,6 +32,10 @@ pub struct MihomoConfig {
     external_controller: Option<String>,
     external_ui: Option<String>,
     secret: Option<String>,
+    pub geodata_mode: Option<bool>,
+    pub geo_auto_update: Option<bool>,
+    pub geo_update_interval: Option<u16>,
+    pub geox_url: Option<GeoxUrl>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -58,6 +62,13 @@ pub enum MihomoLogLevel {
     Debug,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GeoxUrl {
+    pub geoip: String,
+    pub geosite: String,
+    pub mmdb: String,
+}
+
 impl Config {
     pub fn new() -> Config {
         Config {
@@ -66,6 +77,8 @@ impl Config {
             mihomo_binary_path: String::from("~/.local/bin/mihomo"),
             mihomo_config_root: String::from("~/.config/mihomo"),
             user_systemd_root: String::from("~/.config/systemd/user"),
+
+            // https://wiki.metacubex.one/config/general
             mihomo_config: MihomoConfig {
                 port: 7890,
                 socks_port: 7891,
@@ -77,6 +90,20 @@ impl Config {
                 external_controller: Some(String::from("0.0.0.0:9090")),
                 external_ui: Some(String::from("ui")),
                 secret: None,
+                geodata_mode: Some(false),
+                geo_auto_update: Some(true),
+                geo_update_interval: Some(24),
+                geox_url: Some(GeoxUrl {
+                    geoip: String::from(
+                        "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat",
+                    ),
+                    geosite: String::from(
+                        "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat",
+                    ),
+                    mmdb: String::from(
+                        "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb",
+                    ),
+                }),
             },
         }
     }
@@ -169,6 +196,21 @@ pub struct MihomoYamlConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     secret: Option<String>,
 
+    #[serde(rename = "geodata-mode", skip_serializing_if = "Option::is_none")]
+    geodata_mode: Option<bool>,
+
+    #[serde(rename = "geo-auto-update", skip_serializing_if = "Option::is_none")]
+    geo_auto_update: Option<bool>,
+
+    #[serde(
+        rename = "geo-update-interval",
+        skip_serializing_if = "Option::is_none"
+    )]
+    geo_update_interval: Option<u16>,
+
+    #[serde(rename = "geox-url", skip_serializing_if = "Option::is_none")]
+    geox_url: Option<GeoxUrl>,
+
     #[serde(flatten)]
     extra: HashMap<String, serde_yaml::Value>,
 }
@@ -196,6 +238,10 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Resu
     mihomo_yaml.external_controller = override_config.external_controller.clone();
     mihomo_yaml.external_ui = override_config.external_ui.clone();
     mihomo_yaml.secret = override_config.secret.clone();
+    mihomo_yaml.geodata_mode = override_config.geodata_mode;
+    mihomo_yaml.geo_auto_update = override_config.geo_auto_update;
+    mihomo_yaml.geo_update_interval = override_config.geo_update_interval;
+    mihomo_yaml.geox_url = override_config.geox_url.clone();
 
     // Write to file
     let serialized_mihomo_yaml = serde_yaml::to_string(&mihomo_yaml)?;

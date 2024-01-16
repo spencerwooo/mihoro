@@ -16,6 +16,8 @@ pub enum Commands {
     Setup,
     /// Update mihomo remote config and restart mihomo.service
     Update,
+    /// Update mihomo geodata
+    UpdateGeodata,
     /// Apply mihomo config overrides and restart mihomo.service
     Apply,
     /// Start mihomo.service with systemctl

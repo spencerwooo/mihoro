@@ -35,6 +35,7 @@ async fn cli() -> Result<()> {
     match &args.command {
         Some(Commands::Setup) => mihoro.setup(client).await?,
         Some(Commands::Update) => mihoro.update(client).await?,
+        Some(Commands::UpdateGeodata) => mihoro.update_geodata(client).await?,
         Some(Commands::Apply) => mihoro.apply().await?,
         Some(Commands::Uninstall) => mihoro.uninstall()?,
         Some(Commands::Proxy { proxy }) => mihoro.proxy_commands(proxy)?,
