@@ -10,7 +10,7 @@
 * No root privilege required. Maintains per-user instance.
 * First-class support for config subscription.
 
-![screenshot](https://github.com/spencerwooo/mihoro/assets/32114380/60d6e175-d024-429a-a6a6-933b4dfe22c3)
+![screenshot](https://github.com/spencerwooo/mihoro/assets/32114380/e2ce2c76-7b42-4aae-8bb2-a9d74c164b49)
 
 ## Install
 
