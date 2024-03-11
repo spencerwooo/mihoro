@@ -25,7 +25,7 @@ curl -fsSL https://mirror.ghproxy.com/https://raw.githubusercontent.com/spencerw
 
 `mihoro`, like `mihomo`, is a config-based CLI client.
 
-After installing, run `mihoro` once to initialize `~/.config/mihoro.toml`. The default config is:
+After installing, run `mihoro setup` once to initialize `~/.config/mihoro.toml`. The default config is:
 
 ```toml
 remote_mihomo_binary_url = ""
@@ -58,6 +58,8 @@ mmdb = "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmd
 
 * `remote_mihomo_binary_url`, the `tar.gz` download url found in [`mihomo`'s GitHub release](https://github.com/MetaCubeX/mihomo/releases/latest).
 * `remote_config_url`, your remote `mihomo` or `clash` subscription url.
+
+Finally, run `mihoro setup` once more, to start downloading `mihomo` binary and your remote configurations.
 
 ## Usage
 
