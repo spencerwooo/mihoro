@@ -56,12 +56,54 @@ mmdb = "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmd
 
 **Before doing anything, fill in:**
 
-* `remote_mihomo_binary_url`, the `tar.gz` download url found in [`mihomo`'s GitHub release](https://github.com/MetaCubeX/mihomo/releases/latest).
+* `remote_mihomo_binary_url`, the `.gz` download url found in [`mihomo`'s GitHub release](https://github.com/MetaCubeX/mihomo/releases/latest).
 * `remote_config_url`, your remote `mihomo` or `clash` subscription url.
+
+Example:
+
+```toml
+remote_mihomo_binary_url = "https://github.com/MetaCubeX/mihomo/releases/download/v1.18.3/mihomo-linux-amd64-compatible-v1.18.3.gz"
+remote_config_url = "https://tt.vg/freeclash"
+```
 
 Finally, run `mihoro setup` once more, to start downloading `mihomo` binary and your remote configurations.
 
+> [!CAUTION]
+> Use your own `remote_config_url` if available! The link provided comes from a free Clash/Mihomo provider, and `mihoro` cannot guarantee its integrity.
+
 ## Usage
+
+To configure proxy for the current terminal session:
+
+```bash
+eval $(mihoro proxy export)
+```
+
+To revert proxy settings:
+
+```bash
+eval $(mihoro proxy unset)
+```
+
+To check running status of `mihomo` core:
+
+```bash
+mihoro status
+```
+
+To update subscribed remote config:
+
+```bash
+mihoro update
+```
+
+To apply settings changes after modifying `mihoro.toml`:
+
+```bash
+mihoro apply
+```
+
+Full list of commands:
 
 ```console
 $ mihoro --help
