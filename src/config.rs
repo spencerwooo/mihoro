@@ -19,11 +19,12 @@ pub struct Config {
 
 /// `mihomo` configurations (partial).
 ///
-/// Referenced from https://github.com/Dreamacro/mihomo/wiki/configuration
+/// Referenced from https://wiki.metacubex.one/config
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MihomoConfig {
     pub port: u16,
     pub socks_port: u16,
+    pub mixed_port: Option<u16>,
     pub allow_lan: Option<bool>,
     pub bind_address: Option<String>,
     mode: MihomoMode,
@@ -80,8 +81,9 @@ impl Config {
 
             // https://wiki.metacubex.one/config/general
             mihomo_config: MihomoConfig {
-                port: 7890,
-                socks_port: 7891,
+                port: 7891,
+                socks_port: 7892,
+                mixed_port: Some(7890),
                 allow_lan: Some(false),
                 bind_address: Some(String::from("*")),
                 mode: MihomoMode::Rule,
@@ -170,6 +172,9 @@ pub struct MihomoYamlConfig {
     #[serde(rename = "socks-port")]
     socks_port: Option<u16>,
 
+    #[serde(rename = "mixed-port", skip_serializing_if = "Option::is_none")]
+    mixed_port: Option<u16>,
+
     #[serde(rename = "allow-lan", skip_serializing_if = "Option::is_none")]
     allow_lan: Option<bool>,
 
@@ -230,6 +235,7 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Resu
     // Apply config overrides
     mihomo_yaml.port = Some(override_config.port);
     mihomo_yaml.socks_port = Some(override_config.socks_port);
+    mihomo_yaml.mixed_port = override_config.mixed_port;
     mihomo_yaml.allow_lan = override_config.allow_lan;
     mihomo_yaml.bind_address = override_config.bind_address.clone();
     mihomo_yaml.mode = Some(override_config.mode.clone());

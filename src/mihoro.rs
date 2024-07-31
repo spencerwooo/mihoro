@@ -208,16 +208,23 @@ impl Mihoro {
     }
 
     pub fn proxy_commands(&self, proxy: &Option<ProxyCommands>) -> Result<()> {
+        // `mixed_port` takes precedence over `port` and `socks_port` for proxy export
+        let port = self
+            .config
+            .mihomo_config
+            .mixed_port
+            .as_ref()
+            .unwrap_or(&self.config.mihomo_config.port);
+        let socks_port = self
+            .config
+            .mihomo_config
+            .mixed_port
+            .as_ref()
+            .unwrap_or(&self.config.mihomo_config.socks_port);
+
         match proxy {
             Some(ProxyCommands::Export) => {
-                println!(
-                    "{}",
-                    proxy_export_cmd(
-                        "127.0.0.1",
-                        &self.config.mihomo_config.port,
-                        &self.config.mihomo_config.socks_port
-                    )
-                )
+                println!("{}", proxy_export_cmd("127.0.0.1", port, socks_port))
             }
             Some(ProxyCommands::ExportLan) => {
                 if !self.config.mihomo_config.allow_lan.unwrap_or(false) {
@@ -230,11 +237,7 @@ impl Mihoro {
 
                 println!(
                     "{}",
-                    proxy_export_cmd(
-                        &local_ip()?.to_string(),
-                        &self.config.mihomo_config.port,
-                        &self.config.mihomo_config.socks_port
-                    )
+                    proxy_export_cmd(&local_ip()?.to_string(), port, socks_port)
                 );
             }
             Some(ProxyCommands::Unset) => {
