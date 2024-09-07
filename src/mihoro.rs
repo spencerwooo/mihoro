@@ -40,7 +40,7 @@ impl Mihoro {
                 "{}/mihomo.service",
                 config.user_systemd_root
             ))
-                .to_string(),
+            .to_string(),
         });
     }
 
@@ -65,7 +65,7 @@ impl Mihoro {
                 &self.config.remote_mihomo_binary_url,
                 "mihomo-downloaded-binary.tar.gz",
             )
-                .await?;
+            .await?;
             extract_gzip(
                 "mihomo-downloaded-binary.tar.gz",
                 &self.mihomo_target_binary_path,
@@ -82,7 +82,7 @@ impl Mihoro {
             &self.config.remote_config_url,
             &self.mihomo_target_config_path,
         )
-            .await?;
+        .await?;
 
         //Try to Decode base64 config if set
         if self.config.remote_config_encoding == EncodingMode::Base64 {
@@ -114,7 +114,7 @@ impl Mihoro {
             &self.config.remote_config_url,
             &self.mihomo_target_config_path,
         )
-            .await?;
+        .await?;
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
         println!(
             "{} Updated and applied config overrides",
@@ -137,20 +137,20 @@ impl Mihoro {
                     &geox_url.geoip,
                     format!("{}/geoip.dat", &self.mihomo_target_config_root).as_str(),
                 )
-                    .await?;
+                .await?;
                 download_file(
                     &client,
                     &geox_url.geosite,
                     format!("{}/geosite.dat", &self.mihomo_target_config_root).as_str(),
                 )
-                    .await?;
+                .await?;
             } else {
                 download_file(
                     &client,
                     &geox_url.mmdb,
                     format!("{}/country.mmdb", &self.mihomo_target_config_root).as_str(),
                 )
-                    .await?;
+                .await?;
             }
 
             println!("{} Downloaded and updated geodata", self.prefix.green());

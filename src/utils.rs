@@ -61,7 +61,7 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<()>
         "{prefix:.blue}: {msg}\n          {elapsed_precise} [{bar:30.white/blue}] \
          {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
     )?
-        .progress_chars("-  ");
+    .progress_chars("-  ");
     let spinner_style = ProgressStyle::with_template(
         "{prefix:.blue}: {wide_msg}\n        \
          {spinner} {elapsed_precise} - Download speed {bytes_per_sec}",
