@@ -11,10 +11,19 @@ use serde::{Deserialize, Serialize};
 pub struct Config {
     pub remote_mihomo_binary_url: String,
     pub remote_config_url: String,
+    pub remote_config_encoding: EncodingMode,
     pub mihomo_binary_path: String,
     pub mihomo_config_root: String,
     pub user_systemd_root: String,
     pub mihomo_config: MihomoConfig,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum EncodingMode {
+    #[serde(alias = "plain", rename(serialize = "plain"))]
+    Plain,
+    #[serde(alias = "base64", rename(serialize = "base64"))]
+    Base64,
 }
 
 /// `mihomo` configurations (partial).
@@ -75,6 +84,7 @@ impl Config {
         Config {
             remote_mihomo_binary_url: String::from(""),
             remote_config_url: String::from(""),
+            remote_config_encoding: EncodingMode::Plain,
             mihomo_binary_path: String::from("~/.local/bin/mihomo"),
             mihomo_config_root: String::from("~/.config/mihomo"),
             user_systemd_root: String::from("~/.config/systemd/user"),

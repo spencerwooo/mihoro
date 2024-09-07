@@ -30,6 +30,7 @@ After installing, run `mihoro setup` once to initialize `~/.config/mihoro.toml`.
 ```toml
 remote_mihomo_binary_url = ""
 remote_config_url = ""
+remote_config_encoding = "plain"
 mihomo_binary_path = "~/.local/bin/mihomo"
 mihomo_config_root = "~/.config/mihomo"
 user_systemd_root = "~/.config/systemd/user"
@@ -58,6 +59,7 @@ mmdb = "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmd
 
 * `remote_mihomo_binary_url`, the `.gz` download url found in [`mihomo`'s GitHub release](https://github.com/MetaCubeX/mihomo/releases/latest).
 * `remote_config_url`, your remote `mihomo` or `clash` subscription url.
+* `remote_config_encoding`, when your subscription address returns base64, set it to `base64`.
 
 Example:
 
