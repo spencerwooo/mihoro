@@ -1,19 +1,19 @@
+use anyhow::{anyhow, Context, Result};
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
+use colored::Colorize;
+use flate2::read::GzDecoder;
+use futures_util::StreamExt;
+use indicatif::{ProgressBar, ProgressStyle};
+use reqwest::Client;
+use std::fs::OpenOptions;
+use std::io::{Read, Seek, SeekFrom};
 use std::{
     cmp::min,
     fs::{self, File},
     io::{self, Write},
     path::Path,
 };
-use std::fs::OpenOptions;
-use std::io::{Read, Seek, SeekFrom};
-use anyhow::{anyhow, Context, Result};
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
-use colored::Colorize;
-use flate2::read::GzDecoder;
-use futures_util::StreamExt;
-use indicatif::{ProgressBar, ProgressStyle};
-use reqwest::Client;
 use truncatable::Truncatable;
 
 /// Creates the parent directory for a given path if it does not exist.
@@ -132,10 +132,7 @@ pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) -> Result<()>
 //try to decode a base64 file in place, the file must exist,if the file is not base64 encoded ,it is ok
 pub fn decode_base64(filename: &str) -> Result<()> {
     // copy file to buffer
-    let mut file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(filename)?;
+    let mut file = OpenOptions::new().read(true).write(true).open(filename)?;
     let mut base64_buf = Vec::<u8>::new();
     file.read_to_end(&mut base64_buf)?;
     //try decode
@@ -146,10 +143,10 @@ pub fn decode_base64(filename: &str) -> Result<()> {
     }
     //try to clear file
     if let Err(e) = file.set_len(0) {
-        return Err(anyhow!("fail to clear file,why? {}",e));
+        return Err(anyhow!("fail to clear file,why? {}", e));
     }
     if let Err(e) = file.seek(SeekFrom::Start(0)) {
-        return Err(anyhow!("fail to clear file,why? {}",e));
+        return Err(anyhow!("fail to clear file,why? {}", e));
     }
     //write bytes to file
     let decoded_bytes = decoded.expect("this can't be happening");
