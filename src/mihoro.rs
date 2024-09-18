@@ -1,5 +1,5 @@
 use crate::cmd::ProxyCommands;
-use crate::config::{apply_mihomo_override, parse_config, Config, EncodingMode};
+use crate::config::{apply_mihomo_override, parse_config, Config};
 use crate::proxy::{proxy_export_cmd, proxy_unset_cmd};
 use crate::systemctl::Systemctl;
 use crate::utils::{
@@ -86,10 +86,8 @@ impl Mihoro {
         )
         .await?;
 
-        //Try to Decode base64 config if set
-        if self.config.remote_config_encoding == EncodingMode::Base64 {
-            try_decode_base64_file_inplace(&self.mihomo_target_config_path)?;
-        }
+        // Try to decode base64 file in place if file is base64 encoding , otherwise do nothing
+        try_decode_base64_file_inplace(&self.mihomo_target_config_path)?;
 
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
 
