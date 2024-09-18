@@ -2,7 +2,9 @@ use crate::cmd::ProxyCommands;
 use crate::config::{apply_mihomo_override, parse_config, Config, EncodingMode};
 use crate::proxy::{proxy_export_cmd, proxy_unset_cmd};
 use crate::systemctl::Systemctl;
-use crate::utils::{create_parent_dir, decode_base64, delete_file, download_file, extract_gzip};
+use crate::utils::{
+    create_parent_dir, try_decode_base64_file_inplace, delete_file, download_file, extract_gzip,
+};
 
 use std::fs;
 use std::os::unix::prelude::PermissionsExt;
@@ -86,7 +88,7 @@ impl Mihoro {
 
         //Try to Decode base64 config if set
         if self.config.remote_config_encoding == EncodingMode::Base64 {
-            decode_base64(&self.mihomo_target_config_path)?;
+            try_decode_base64_file_inplace(&self.mihomo_target_config_path)?;
         }
 
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;

@@ -1,19 +1,17 @@
-use anyhow::{anyhow, Context, Result};
-use base64::prelude::BASE64_STANDARD;
-use base64::Engine;
+use std::{
+    cmp::min,
+    fs::{self, File},
+    io::{self, BufWriter, Read, Seek, SeekFrom, Write},
+    path::Path,
+};
+
+use anyhow::{Context, Result};
+use base64::{prelude::BASE64_STANDARD, Engine};
 use colored::Colorize;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Client;
-use std::fs::OpenOptions;
-use std::io::{Read, Seek, SeekFrom};
-use std::{
-    cmp::min,
-    fs::{self, File},
-    io::{self, Write},
-    path::Path,
-};
 use truncatable::Truncatable;
 
 /// Creates the parent directory for a given path if it does not exist.
@@ -129,27 +127,39 @@ pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) -> Result<()>
     );
     Ok(())
 }
-//try to decode a base64 file in place, the file must exist,if the file is not base64 encoded ,it is ok
-pub fn decode_base64(filename: &str) -> Result<()> {
-    // copy file to buffer
-    let mut file = OpenOptions::new().read(true).write(true).open(filename)?;
-    let mut base64_buf = Vec::<u8>::new();
+
+/// Try and decode a base64 encoded file in place.
+///
+/// Decodes the base64 encoded content of a file in place and writes the decoded content back to the
+/// file. If the file does not contain base64 encoded content, maintains the file as is.
+///
+/// # Arguments
+///
+/// * `filename` - A string slice that holds the path to the file to decode.
+pub fn try_decode_base64_file_inplace(filename: &str) -> Result<()> {
+    // Open the file for reading and writing
+    let mut file = File::open(filename)?;
+    let mut base64_buf = Vec::new();
+
+    // Read the file content into the buffer
     file.read_to_end(&mut base64_buf)?;
-    //try decode
-    let decoded = BASE64_STANDARD.decode(base64_buf.as_slice());
-    // the file is not base64 encoded .It is ok .Do Nothing
-    if let Err(_) = decoded {
-        return Ok(());
+
+    // Try to decode the base64 content
+    match BASE64_STANDARD.decode(&base64_buf) {
+        Ok(decoded_bytes) => {
+            // Truncate the file and seek to the beginning
+            file.set_len(0)?;
+            file.seek(SeekFrom::Start(0))?;
+
+            // Write the decoded bytes back to the file
+            let mut writer = BufWriter::new(&file);
+            writer.write_all(&decoded_bytes)?;
+        }
+        Err(_) => {
+            // If decoding fails, do nothing and return Ok
+            return Ok(());
+        }
     }
-    //try to clear file
-    if let Err(e) = file.set_len(0) {
-        return Err(anyhow!("fail to clear file,why? {}", e));
-    }
-    if let Err(e) = file.seek(SeekFrom::Start(0)) {
-        return Err(anyhow!("fail to clear file,why? {}", e));
-    }
-    //write bytes to file
-    let decoded_bytes = decoded.expect("this can't be happening");
-    file.write_all(&decoded_bytes)?;
+
     Ok(())
 }
