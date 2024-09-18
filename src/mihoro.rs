@@ -3,7 +3,7 @@ use crate::config::{apply_mihomo_override, parse_config, Config, EncodingMode};
 use crate::proxy::{proxy_export_cmd, proxy_unset_cmd};
 use crate::systemctl::Systemctl;
 use crate::utils::{
-    create_parent_dir, try_decode_base64_file_inplace, delete_file, download_file, extract_gzip,
+    create_parent_dir, delete_file, download_file, extract_gzip, try_decode_base64_file_inplace,
 };
 
 use std::fs;
