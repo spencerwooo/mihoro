@@ -86,7 +86,7 @@ impl Mihoro {
         )
         .await?;
 
-        // Try to decode base64 file in place if file is base64 encoding , otherwise do nothing
+        // Try to decode base64 file in place if file is base64 encoding, otherwise do nothing
         try_decode_base64_file_inplace(&self.mihomo_target_config_path)?;
 
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
@@ -115,6 +115,10 @@ impl Mihoro {
             &self.mihomo_target_config_path,
         )
         .await?;
+
+        // Try to decode base64 file in place if file is base64 encoding, otherwise do nothing
+        try_decode_base64_file_inplace(&self.mihomo_target_config_path)?;
+
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
         println!(
             "{} Updated and applied config overrides",
