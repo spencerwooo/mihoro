@@ -15,7 +15,7 @@
 ## Install
 
 ```shell
-curl -fsSL https://mirror.ghproxy.com/https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -
+curl -fsSL https://ghp.ci//https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -
 ```
 
 > [!IMPORTANT]
@@ -62,13 +62,13 @@ mmdb = "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmd
 Example:
 
 ```toml
-remote_mihomo_binary_url = "https://github.com/MetaCubeX/mihomo/releases/download/v1.18.3/mihomo-linux-amd64-compatible-v1.18.3.gz"
-remote_config_url = "https://tt.vg/freeclash"
+remote_mihomo_binary_url = "https://ghp.ci/https://github.com/MetaCubeX/mihomo/releases/download/v1.18.8/mihomo-linux-amd64-compatible-v1.18.8.gz"
+remote_config_url = "https://tt.vg/freeclash"  # DONT USE THIS IF YOU CAN!
 ```
 
 Finally, run `mihoro setup` once more, to start downloading `mihomo` binary and your remote configurations.
 
-> [!CAUTION]
+> [!CAUTION] DISCLAIMER!
 > Use your own `remote_config_url` if available! The link provided comes from a free Clash/Mihomo provider, and `mihoro` cannot guarantee its integrity.
 
 ## Usage
