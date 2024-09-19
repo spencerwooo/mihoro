@@ -135,10 +135,10 @@ pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) -> Result<()>
 ///
 /// # Arguments
 ///
-/// * `filename` - A string slice that holds the path to the file to decode.
-pub fn try_decode_base64_file_inplace(filename: &str) -> Result<()> {
+/// * `filepath` - Path to the file to decode base64 content in place.
+pub fn try_decode_base64_file_inplace(filepath: &str) -> Result<()> {
     // Open the file for reading and writing
-    let mut file = File::open(filename)?;
+    let mut file = File::options().read(true).write(true).open(filepath)?;
     let mut base64_buf = Vec::new();
 
     // Read the file content into the buffer
