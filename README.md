@@ -1,21 +1,31 @@
-# mihoro
+<div align="center">
+  <div><img src="https://github.com/user-attachments/assets/b292facf-b4d0-4087-b33c-e9ffba061e73" alt="mihoro banner" width="512" /></div>
 
-[![CI](https://github.com/spencerwooo/mihoro/actions/workflows/ci.yml/badge.svg)](https://github.com/spencerwooo/mihoro/actions/workflows/ci.yml)
-[![Release](https://github.com/spencerwooo/mihoro/actions/workflows/release.yml/badge.svg)](https://github.com/spencerwooo/mihoro/actions/workflows/release.yml)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/spencerwooo/mihoro)](https://github.com/spencerwooo/mihoro/releases/latest)
+  <a href="https://github.com/spencerwooo/mihoro/actions/workflows/ci.yml">
+    <img src="https://github.com/spencerwooo/mihoro/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <a href="https://github.com/spencerwooo/mihoro/actions/workflows/release.yml">
+    <img src="https://github.com/spencerwooo/mihoro/actions/workflows/release.yml/badge.svg" alt="Release">
+  </a>
+  <a href="https://github.com/spencerwooo/mihoro/releases/latest">
+    <img src="https://img.shields.io/github/v/release/spencerwooo/mihoro" alt="GitHub release (latest by date)">
+  </a>
+</div>
 
-[Mihomo](https://github.com/MetaCubeX/mihomo) CLI client on Linux.
+---
+
+**mihoro** - The 🦀 Rust™-based [Mihomo](https://github.com/MetaCubeX/mihomo) CLI client on Linux.
 
 * Setup, update, apply overrides, and manage with systemd. **No more, no less.**
 * No root privilege required. Maintains per-user instance.
 * First-class support for config subscription.
 
-![Mihoro CLI](https://github.com/spencerwooo/mihoro/assets/32114380/933977a9-4d80-4952-82bd-3792ac18356b)
+![Mihoro CLI](https://github.com/user-attachments/assets/381c1b9b-5ce2-49c5-a9f6-62f552b19e4d)
 
 ## Install
 
 ```shell
-curl -fsSL https://ghp.ci//https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -
+curl -fsSL https://ghp.ci/https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -
 ```
 
 > [!IMPORTANT]
@@ -63,13 +73,14 @@ Example:
 
 ```toml
 remote_mihomo_binary_url = "https://ghp.ci/https://github.com/MetaCubeX/mihomo/releases/download/v1.18.8/mihomo-linux-amd64-compatible-v1.18.8.gz"
-remote_config_url = "https://tt.vg/freeclash"  # DONT USE THIS IF YOU CAN!
+remote_config_url = "https://tt.vg/freeclash"  # DO NOT USE THIS IF YOU CAN!
 ```
 
 Finally, run `mihoro setup` once more, to start downloading `mihomo` binary and your remote configurations.
 
-> [!CAUTION] DISCLAIMER!
-> Use your own `remote_config_url` if available! The link provided comes from a free Clash/Mihomo provider, and `mihoro` cannot guarantee its integrity.
+> [!CAUTION]
+>
+> :warning: **DISCLAIMER!** Use your own `remote_config_url` at all times! The link provided comes from a **free, third-party** Clash/Mihomo provider, and `mihoro` cannot guarantee its integrity.
 
 ## Usage
 
