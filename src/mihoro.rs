@@ -2,7 +2,9 @@ use crate::cmd::ProxyCommands;
 use crate::config::{apply_mihomo_override, parse_config, Config};
 use crate::proxy::{proxy_export_cmd, proxy_unset_cmd};
 use crate::systemctl::Systemctl;
-use crate::utils::{create_parent_dir, delete_file, download_file, extract_gzip};
+use crate::utils::{
+    create_parent_dir, delete_file, download_file, extract_gzip, try_decode_base64_file_inplace,
+};
 
 use std::fs;
 use std::os::unix::prelude::PermissionsExt;
@@ -83,6 +85,10 @@ impl Mihoro {
             &self.mihomo_target_config_path,
         )
         .await?;
+
+        // Try to decode base64 file in place if file is base64 encoding, otherwise do nothing
+        try_decode_base64_file_inplace(&self.mihomo_target_config_path)?;
+
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
 
         // Download geodata
@@ -109,6 +115,10 @@ impl Mihoro {
             &self.mihomo_target_config_path,
         )
         .await?;
+
+        // Try to decode base64 file in place if file is base64 encoding, otherwise do nothing
+        try_decode_base64_file_inplace(&self.mihomo_target_config_path)?;
+
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
         println!(
             "{} Updated and applied config overrides",

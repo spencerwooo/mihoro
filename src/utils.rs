@@ -1,11 +1,12 @@
 use std::{
     cmp::min,
     fs::{self, File},
-    io::{self, Write},
+    io::{self, BufWriter, Read, Seek, SeekFrom, Write},
     path::Path,
 };
 
 use anyhow::{Context, Result};
+use base64::{prelude::BASE64_STANDARD, Engine};
 use colored::Colorize;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
@@ -124,5 +125,41 @@ pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) -> Result<()>
         prefix.green(),
         filename.underline().yellow()
     );
+    Ok(())
+}
+
+/// Try and decode a base64 encoded file in place.
+///
+/// Decodes the base64 encoded content of a file in place and writes the decoded content back to the
+/// file. If the file does not contain base64 encoded content, maintains the file as is.
+///
+/// # Arguments
+///
+/// * `filepath` - Path to the file to decode base64 content in place.
+pub fn try_decode_base64_file_inplace(filepath: &str) -> Result<()> {
+    // Open the file for reading and writing
+    let mut file = File::options().read(true).write(true).open(filepath)?;
+    let mut base64_buf = Vec::new();
+
+    // Read the file content into the buffer
+    file.read_to_end(&mut base64_buf)?;
+
+    // Try to decode the base64 content
+    match BASE64_STANDARD.decode(&base64_buf) {
+        Ok(decoded_bytes) => {
+            // Truncate the file and seek to the beginning
+            file.set_len(0)?;
+            file.seek(SeekFrom::Start(0))?;
+
+            // Write the decoded bytes back to the file
+            let mut writer = BufWriter::new(&file);
+            writer.write_all(&decoded_bytes)?;
+        }
+        Err(_) => {
+            // If decoding fails, do nothing and return Ok
+            return Ok(());
+        }
+    }
+
     Ok(())
 }
