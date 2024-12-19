@@ -25,7 +25,7 @@
 ## Install
 
 ```shell
-curl -fsSL https://ghp.ci/https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -
+curl -fsSL https://ghgo.xyz/https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -
 ```
 
 > [!IMPORTANT]
@@ -72,7 +72,7 @@ mmdb = "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmd
 Example:
 
 ```toml
-remote_mihomo_binary_url = "https://ghp.ci/https://github.com/MetaCubeX/mihomo/releases/download/v1.18.8/mihomo-linux-amd64-compatible-v1.18.8.gz"
+remote_mihomo_binary_url = "https://ghgo.xyz/https://github.com/MetaCubeX/mihomo/releases/download/v1.18.8/mihomo-linux-amd64-compatible-v1.18.8.gz"
 remote_config_url = "https://tt.vg/freeclash"  # DO NOT USE THIS IF YOU CAN!
 ```
 
