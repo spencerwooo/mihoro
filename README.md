@@ -20,7 +20,7 @@
 * No root privilege required. Maintains per-user instance.
 * First-class support for config subscription.
 
-![Mihoro CLI](https://github.com/user-attachments/assets/381c1b9b-5ce2-49c5-a9f6-62f552b19e4d)
+![screenshot](https://github.com/user-attachments/assets/f1120e69-650e-4714-9f57-2fe793115d13)
 
 ## Install
 
