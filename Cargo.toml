@@ -16,15 +16,15 @@ categories = ["command-line-utilities"]
 [dependencies]
 clap = { version = "4.4", features = ["derive"] }
 clap_complete = "4.4"
-colored = "2.0"
+colored = "3.0"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
 flate2 = "1.0"
 shellexpand = "3.1"
 openssl = { version = "0.10", features = ["vendored"] }
 serde_yaml = "0.9"
-local-ip-address = "0.5"
-reqwest = { version = "0.11", features = ["stream"] }
+local-ip-address = "0.6"
+reqwest = { version = "0.12", features = ["stream"] }
 futures-util = "0.3"
 indicatif = "0.17"
 tokio = { version = "1.34", features = ["full"] }
