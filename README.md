@@ -72,7 +72,7 @@ mmdb = "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmd
 Example:
 
 ```toml
-remote_mihomo_binary_url = "https://ghfast.top/https://github.com/MetaCubeX/mihomo/releases/download/v1.18.8/mihomo-linux-amd64-compatible-v1.18.8.gz"
+remote_mihomo_binary_url = "https://ghfast.top/https://github.com/MetaCubeX/mihomo/releases/download/v1.19.2/mihomo-linux-amd64-v1.19.2.gz"
 remote_config_url = "https://tt.vg/freeclash"  # DO NOT USE THIS IF YOU CAN!
 ```
 
@@ -112,6 +112,13 @@ To apply settings changes after modifying `mihoro.toml`:
 
 ```bash
 mihoro apply
+```
+
+To generate completions in your shell:
+
+```bash
+# fish
+mihoro completions fish > ~/.config/fish/completions/mihoro.fish
 ```
 
 Full list of commands:
