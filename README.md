@@ -117,8 +117,16 @@ mihoro apply
 To generate completions in your shell:
 
 ```bash
-# fish
+# For fish:
 mihoro completions fish > ~/.config/fish/completions/mihoro.fish
+
+# For bash:
+# 1. generate the bash script (~/mihoro.sh is not a good path tho)
+mihoro completions bash > ~/mihoro.sh
+# 2. source it in ~/.bashrc by adding this
+if [ -f ~/mihoro.sh ]; then
+  . ~/mihoro.sh
+fi
 ```
 
 Full list of commands:
