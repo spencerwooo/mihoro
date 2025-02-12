@@ -114,19 +114,17 @@ To apply settings changes after modifying `mihoro.toml`:
 mihoro apply
 ```
 
-To generate completions in your shell:
+Shell auto-completions are available under `mihoro completions` for bash, fish, zsh:
 
 ```bash
-# For fish:
-mihoro completions fish > ~/.config/fish/completions/mihoro.fish
-
 # For bash:
-# 1. generate the bash script (~/mihoro.sh is not a good path tho)
-mihoro completions bash > ~/mihoro.sh
-# 2. source it in ~/.bashrc by adding this
-if [ -f ~/mihoro.sh ]; then
-  . ~/mihoro.sh
-fi
+mihoro completions bash > $XDG_CONFIG_HOME/bash_completion  # or /etc/bash_completion.d/mihoro
+
+# For fish:
+mihoro completions fish > $HOME/.config/fish/completions/
+
+# For zsh:
+mihoro completions zsh > $XDG_CONFIG_HOME/zsh/completions/_mihoro  # or to one of your $fpath directories
 ```
 
 Full list of commands:
