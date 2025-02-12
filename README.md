@@ -118,10 +118,10 @@ Shell auto-completions are available under `mihoro completions` for bash, fish, 
 
 ```bash
 # For bash:
-mihoro completions bash > $XDG_CONFIG_HOME/bash_completion  # or /etc/bash_completion.d/mihoro
+mihoro completions bash > $XDG_CONFIG_HOME/bash_completion/mihoro  # or /etc/bash_completion.d/mihoro
 
 # For fish:
-mihoro completions fish > $HOME/.config/fish/completions/
+mihoro completions fish > $HOME/.config/fish/completions/mihoro.fish
 
 # For zsh:
 mihoro completions zsh > $XDG_CONFIG_HOME/zsh/completions/_mihoro  # or to one of your $fpath directories
