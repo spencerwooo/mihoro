@@ -156,6 +156,14 @@ Options:
   -V, --version                        Print version
 ```
 
+## Dashboard
+
+On controlling `mihomo` itself, we recommend using a web-based dashboard. Some options include [metacubexd](https://github.com/MetaCubeX/metacubexd), [zashboard](https://github.com/Zephyruso/zashboard), or [yacd](https://github.com/MetaCubeX/Yacd-meta).
+
+Web-based dashboards require enabling `external_controller` under `[mihomo_config]`. Applying this config will expose `mihomo`'s control API under this address, which you can then configure your dashboard to use this as its backend.
+
+You can also put the static files of these dashboards under the `external_ui` directory if defined. In this case, `mihomo` will serve the dashboard locally under `{external_controller}/ui`. Please refer to the official documentation of mihomo for more information: [docs/external_controller](https://wiki.metacubex.one/config/general/#api), [docs/external_ui](https://wiki.metacubex.one/config/general/#_7).
+
 ## License
 
 [MIT](LICENSE)
