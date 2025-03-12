@@ -13,7 +13,11 @@ pub struct Args {
 #[derive(Subcommand)]
 pub enum Commands {
     /// Setup mihoro by downloading mihomo binary and remote config
-    Setup,
+    Setup {
+        /// Force download mihomo binary even if it already exists
+        #[arg(long)]
+        overwrite: bool,
+    },
     /// Update mihomo remote config and restart mihomo.service
     Update,
     /// Update mihomo geodata

@@ -33,7 +33,7 @@ async fn cli() -> Result<()> {
     let mihoro = Mihoro::new(&args.mihoro_config)?;
 
     match &args.command {
-        Some(Commands::Setup) => mihoro.setup(client).await?,
+        Some(Commands::Setup { overwrite }) => mihoro.setup(client, *overwrite).await?,
         Some(Commands::Update) => mihoro.update(client).await?,
         Some(Commands::UpdateGeodata) => mihoro.update_geodata(client).await?,
         Some(Commands::Apply) => mihoro.apply().await?,

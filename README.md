@@ -35,7 +35,13 @@ curl -fsSL https://ghfast.top/https://raw.githubusercontent.com/spencerwooo/miho
 
 `mihoro`, like `mihomo`, is a config-based CLI client.
 
-After installing, run `mihoro setup` once to initialize `~/.config/mihoro.toml`. The default config is:
+After installing `mihoro`, initialize its config `~/.config/mihoro.toml` first by:
+
+```bash
+mihoro setup
+```
+
+The default config will be generated:
 
 ```toml
 remote_mihomo_binary_url = ""
@@ -72,11 +78,17 @@ mmdb = "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/count
 Example:
 
 ```toml
-remote_mihomo_binary_url = "https://ghfast.top/https://github.com/MetaCubeX/mihomo/releases/download/v1.19.2/mihomo-linux-amd64-v1.19.2.gz"
+remote_mihomo_binary_url = "https://ghfast.top/https://github.com/MetaCubeX/mihomo/releases/download/v1.19.3/mihomo-linux-amd64-v1.19.3.gz"
 remote_config_url = "https://tt.vg/freeclash"  # DO NOT USE THIS IF YOU CAN!
 ```
 
-Finally, run `mihoro setup` once more, to start downloading `mihomo` binary and your remote configurations.
+Customize other settings as needed, then, run setup once more:
+
+```bash
+mihoro setup
+```
+
+... to start downloading `mihomo` binary and your remote configurations.
 
 > [!CAUTION]
 >
@@ -113,6 +125,12 @@ To apply settings changes after modifying `mihoro.toml`:
 ```bash
 mihoro apply
 ```
+
+To overwrite the current mihomo binary for a new version (provided you have updated `remote_mihomo_binary_url`):
+
+```bash
+mihoro setup --overwrite
+``` 
 
 Shell auto-completions are available under `mihoro completions` for bash, fish, zsh:
 

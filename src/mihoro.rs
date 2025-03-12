@@ -9,7 +9,7 @@ use crate::utils::{
 use std::fs;
 use std::os::unix::prelude::PermissionsExt;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use colored::Colorize;
 use local_ip_address::local_ip;
 use reqwest::Client;
@@ -46,21 +46,29 @@ impl Mihoro {
         });
     }
 
-    pub async fn setup(&self, client: Client) -> Result<()> {
+    pub async fn setup(&self, client: Client, overwrite_binary: bool) -> Result<()> {
         println!(
             "{} Setting up mihomo's binary, config, and systemd service...",
             &self.prefix.cyan()
         );
 
-        // Attempt to download and setup mihomo binary if needed
-        if fs::metadata(&self.mihomo_target_binary_path).is_ok() {
-            // If mihomo binary already exists at `mihomo_target_binary_path`, then skip setup
+        // Setup mihomo binary at `mihomo_target_binary_path`
+        let binary_exists = fs::metadata(&self.mihomo_target_binary_path).is_ok();
+        if binary_exists && !overwrite_binary {
             println!(
                 "{} Assuming mihomo binary already installed at {}, skipping setup",
                 self.prefix.yellow(),
                 self.mihomo_target_binary_path.underline().green()
             );
         } else {
+            if binary_exists {
+                println!(
+                    "{} Overwriting existing mihomo binary at {}",
+                    self.prefix.yellow(),
+                    self.mihomo_target_binary_path.underline().green()
+                );
+            }
+
             // Download mihomo binary and set permission to executable
             download_file(
                 &client,
@@ -68,14 +76,27 @@ impl Mihoro {
                 "mihomo-downloaded-binary.tar.gz",
             )
             .await?;
-            extract_gzip(
+
+            // Try to extract the binary, handle "Text file busy" error if overwriting
+            match extract_gzip(
                 "mihomo-downloaded-binary.tar.gz",
                 &self.mihomo_target_binary_path,
                 &self.prefix,
-            )?;
-
-            let executable = fs::Permissions::from_mode(0o755);
-            fs::set_permissions(&self.mihomo_target_binary_path, executable)?;
+            ) {
+                Ok(_) => {
+                    // Set executable permission
+                    let executable = fs::Permissions::from_mode(0o755);
+                    fs::set_permissions(&self.mihomo_target_binary_path, executable)?;
+                }
+                Err(e) => {
+                    // Handle "Text file busy" error
+                    return Err(if e.to_string().contains("Text file busy") {
+                        anyhow!("Failed to overwrite as `mihomo` is in use, stop the service first")
+                    } else {
+                        e
+                    });
+                }
+            };
         }
 
         // Download remote mihomo config and apply override
