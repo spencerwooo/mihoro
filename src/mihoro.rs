@@ -8,12 +8,14 @@ use crate::utils::{
 
 use std::fs;
 use std::os::unix::prelude::PermissionsExt;
+use std::path::Path;
 
 use anyhow::{anyhow, Result};
 use colored::Colorize;
 use local_ip_address::local_ip;
 use reqwest::Client;
 use shellexpand::tilde;
+use tempfile::NamedTempFile;
 
 #[derive(Debug)]
 pub struct Mihoro {
@@ -31,7 +33,7 @@ pub struct Mihoro {
 impl Mihoro {
     pub fn new(config_path: &String) -> Result<Mihoro> {
         let config = parse_config(tilde(&config_path).as_ref())?;
-        return Ok(Mihoro {
+        Ok(Mihoro {
             prefix: String::from("mihoro:"),
             config: config.clone(),
             mihomo_target_binary_path: tilde(&config.mihomo_binary_path).to_string(),
@@ -43,7 +45,7 @@ impl Mihoro {
                 config.user_systemd_root
             ))
             .to_string(),
-        });
+        })
     }
 
     pub async fn setup(&self, client: Client, overwrite_binary: bool) -> Result<()> {
@@ -69,20 +71,15 @@ impl Mihoro {
                 );
             }
 
+            // Create a temporary file for downloading
+            let temp_file = NamedTempFile::new()?;
+            let temp_path = temp_file.path();
+
             // Download mihomo binary and set permission to executable
-            download_file(
-                &client,
-                &self.config.remote_mihomo_binary_url,
-                "mihomo-downloaded-binary.tar.gz",
-            )
-            .await?;
+            download_file(&client, &self.config.remote_mihomo_binary_url, temp_path).await?;
 
             // Try to extract the binary, handle "Text file busy" error if overwriting
-            match extract_gzip(
-                "mihomo-downloaded-binary.tar.gz",
-                &self.mihomo_target_binary_path,
-                &self.prefix,
-            ) {
+            match extract_gzip(temp_path, &self.mihomo_target_binary_path, &self.prefix) {
                 Ok(_) => {
                     // Set executable permission
                     let executable = fs::Permissions::from_mode(0o755);
@@ -103,7 +100,7 @@ impl Mihoro {
         download_file(
             &client,
             &self.config.remote_config_url,
-            &self.mihomo_target_config_path,
+            Path::new(&self.mihomo_target_config_path),
         )
         .await?;
 
@@ -133,7 +130,7 @@ impl Mihoro {
         download_file(
             &client,
             &self.config.remote_config_url,
-            &self.mihomo_target_config_path,
+            Path::new(&self.mihomo_target_config_path),
         )
         .await?;
 
@@ -160,20 +157,20 @@ impl Mihoro {
                 download_file(
                     &client,
                     &geox_url.geoip,
-                    format!("{}/geoip.dat", &self.mihomo_target_config_root).as_str(),
+                    &Path::new(&self.mihomo_target_config_root).join("geoip.dat"),
                 )
                 .await?;
                 download_file(
                     &client,
                     &geox_url.geosite,
-                    format!("{}/geosite.dat", &self.mihomo_target_config_root).as_str(),
+                    &Path::new(&self.mihomo_target_config_root).join("geosite.dat"),
                 )
                 .await?;
             } else {
                 download_file(
                     &client,
                     &geox_url.mmdb,
-                    format!("{}/country.mmdb", &self.mihomo_target_config_root).as_str(),
+                    &Path::new(&self.mihomo_target_config_root).join("country.mmdb"),
                 )
                 .await?;
             }
@@ -312,7 +309,7 @@ WantedBy=default.target",
     );
 
     // Create mihomo service directory if not exists
-    create_parent_dir(mihomo_service_path)?;
+    create_parent_dir(Path::new(mihomo_service_path))?;
 
     // Write mihomo.service contents to file
     fs::write(mihomo_service_path, service)?;

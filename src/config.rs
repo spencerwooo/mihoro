@@ -129,11 +129,10 @@ impl Config {
 /// * If config file does not exist, creates default config file to path and returns error.
 /// * If found, tries to parse the file and returns error if parse fails or fields found undefined.
 pub fn parse_config(path: &str) -> Result<Config> {
-    // Create `~/.config` directory if not exists
-    create_parent_dir(path)?;
-
     // Create mihoro default config if not exists
     let config_path = Path::new(path);
+    create_parent_dir(config_path)?;
+
     if !config_path.exists() {
         Config::new().write(config_path)?;
         bail!(

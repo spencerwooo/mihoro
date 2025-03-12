@@ -19,10 +19,11 @@ use truncatable::Truncatable;
 /// # Arguments
 ///
 /// * `path` - A string slice that holds the path for which the parent directory should be created.
-pub fn create_parent_dir(path: &str) -> Result<()> {
-    let parent_dir = Path::new(path)
+pub fn create_parent_dir(path: &Path) -> Result<()> {
+    // let parent_dir = Path::new(path)
+    let parent_dir = path
         .parent()
-        .with_context(|| format!("parent directory of `{}` invalid", path))?;
+        .with_context(|| format!("parent directory of `{}` invalid", path.to_string_lossy()))?;
     if !parent_dir.exists() {
         fs::create_dir_all(parent_dir)?;
     }
@@ -40,7 +41,7 @@ pub fn create_parent_dir(path: &str) -> Result<()> {
 ///
 /// Note: Allow `clippy::unused_io_amount` because we are writing downloaded chunks on the fly.
 #[allow(clippy::unused_io_amount)]
-pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<()> {
+pub async fn download_file(client: &Client, url: &str, path: &Path) -> Result<()> {
     // Create parent directory for download destination if not exists
     create_parent_dir(path)?;
 
@@ -97,7 +98,10 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<()>
         }
     }
 
-    pb.finish_with_message(format!("Downloaded to {}", path.underline()));
+    pb.finish_with_message(format!(
+        "Downloaded to {}",
+        path.to_str().unwrap().underline()
+    ));
     Ok(())
 }
 
@@ -111,19 +115,19 @@ pub fn delete_file(path: &str, prefix: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn extract_gzip(gzip_path: &str, filename: &str, prefix: &str) -> Result<()> {
+pub fn extract_gzip(from_path: &Path, to_path: &str, prefix: &str) -> Result<()> {
     // Create parent directory for extraction dest if not exists
-    create_parent_dir(filename)?;
+    create_parent_dir(Path::new(to_path))?;
 
     // Extract gzip file
-    let mut archive = GzDecoder::new(fs::File::open(gzip_path)?);
-    let mut file = fs::File::create(filename)?;
+    let mut archive = GzDecoder::new(File::open(from_path)?);
+    let mut file = File::create(to_path)?;
     io::copy(&mut archive, &mut file)?;
-    fs::remove_file(gzip_path)?;
+    // fs::remove_file(gzip_path)?;
     println!(
         "{} Extracted to {}",
         prefix.green(),
-        filename.underline().yellow()
+        to_path.underline().yellow()
     );
     Ok(())
 }

@@ -865,6 +865,7 @@ dependencies = [
  "serde",
  "serde_yaml",
  "shellexpand",
+ "tempfile",
  "tokio",
  "toml",
  "truncatable",
