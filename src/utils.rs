@@ -41,16 +41,23 @@ pub fn create_parent_dir(path: &Path) -> Result<()> {
 ///
 /// Note: Allow `clippy::unused_io_amount` because we are writing downloaded chunks on the fly.
 #[allow(clippy::unused_io_amount)]
-pub async fn download_file(client: &Client, url: &str, path: &Path) -> Result<()> {
+pub async fn download_file(
+    client: &Client,
+    url: &str,
+    path: &Path,
+    user_agent: &str,
+) -> Result<()> {
     // Create parent directory for download destination if not exists
     create_parent_dir(path)?;
 
     // Create shared http client for multiple downloads when possible
     let res = client
         .get(url)
+        .header("User-Agent", user_agent)
         .send()
         .await
         .with_context(|| format!("failed to GET from '{}'", &url))?;
+    res.error_for_status_ref()?;
 
     // If content length is not available or 0, use a spinner instead of a progress bar
     let total_size = res.content_length().unwrap_or(0);

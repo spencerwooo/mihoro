@@ -14,7 +14,15 @@ pub struct Config {
     pub mihomo_binary_path: String,
     pub mihomo_config_root: String,
     pub user_systemd_root: String,
+    #[serde(default = "ser::default_user_agent")]
+    pub http_user_agent: String,
     pub mihomo_config: MihomoConfig,
+}
+
+mod ser {
+    pub fn default_user_agent() -> String {
+        "mihoro".into()
+    }
 }
 
 /// `mihomo` configurations (partial).
@@ -78,6 +86,7 @@ impl Config {
             mihomo_binary_path: String::from("~/.local/bin/mihomo"),
             mihomo_config_root: String::from("~/.config/mihomo"),
             user_systemd_root: String::from("~/.config/systemd/user"),
+            http_user_agent: ser::default_user_agent(),
 
             // https://wiki.metacubex.one/config/general
             mihomo_config: MihomoConfig {

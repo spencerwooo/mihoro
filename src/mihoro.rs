@@ -76,7 +76,13 @@ impl Mihoro {
             let temp_path = temp_file.path();
 
             // Download mihomo binary and set permission to executable
-            download_file(&client, &self.config.remote_mihomo_binary_url, temp_path).await?;
+            download_file(
+                &client,
+                &self.config.remote_mihomo_binary_url,
+                temp_path,
+                &self.config.http_user_agent,
+            )
+            .await?;
 
             // Try to extract the binary, handle "Text file busy" error if overwriting
             match extract_gzip(temp_path, &self.mihomo_target_binary_path, &self.prefix) {
@@ -101,6 +107,7 @@ impl Mihoro {
             &client,
             &self.config.remote_config_url,
             Path::new(&self.mihomo_target_config_path),
+            &self.config.http_user_agent,
         )
         .await?;
 
@@ -131,6 +138,7 @@ impl Mihoro {
             &client,
             &self.config.remote_config_url,
             Path::new(&self.mihomo_target_config_path),
+            &self.config.http_user_agent,
         )
         .await?;
 
@@ -158,12 +166,14 @@ impl Mihoro {
                     &client,
                     &geox_url.geoip,
                     &Path::new(&self.mihomo_target_config_root).join("geoip.dat"),
+                    &self.config.http_user_agent,
                 )
                 .await?;
                 download_file(
                     &client,
                     &geox_url.geosite,
                     &Path::new(&self.mihomo_target_config_root).join("geosite.dat"),
+                    &self.config.http_user_agent,
                 )
                 .await?;
             } else {
@@ -171,6 +181,7 @@ impl Mihoro {
                     &client,
                     &geox_url.mmdb,
                     &Path::new(&self.mihomo_target_config_root).join("country.mmdb"),
+                    &self.config.http_user_agent,
                 )
                 .await?;
             }
