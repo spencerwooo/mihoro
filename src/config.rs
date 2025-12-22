@@ -86,7 +86,7 @@ impl Config {
             mihomo_binary_path: String::from("~/.local/bin/mihomo"),
             mihomo_config_root: String::from("~/.config/mihomo"),
             user_systemd_root: String::from("~/.config/systemd/user"),
-            http_user_agent: ser::default_user_agent(),
+            http_user_agent: String::from("mihoro"),
 
             // https://wiki.metacubex.one/config/general
             mihomo_config: MihomoConfig {
