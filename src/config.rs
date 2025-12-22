@@ -8,20 +8,29 @@ use serde::{Deserialize, Serialize};
 
 /// `mihoro` configurations.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(default)]
 pub struct Config {
     pub remote_mihomo_binary_url: String,
     pub remote_config_url: String,
     pub mihomo_binary_path: String,
     pub mihomo_config_root: String,
     pub user_systemd_root: String,
-    #[serde(default = "ser::default_user_agent")]
-    pub http_user_agent: String,
+    pub mihoro_user_agent: String,
     pub mihomo_config: MihomoConfig,
 }
 
-mod ser {
-    pub fn default_user_agent() -> String {
-        "mihoro".into()
+// Serde defaults for Config
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            remote_mihomo_binary_url: String::from(""),
+            remote_config_url: String::from(""),
+            mihomo_binary_path: String::from("~/.local/bin/mihomo"),
+            mihomo_config_root: String::from("~/.config/mihomo"),
+            user_systemd_root: String::from("~/.config/systemd/user"),
+            mihoro_user_agent: String::from("mihoro"),
+            mihomo_config: MihomoConfig::default(),
+        }
     }
 }
 
@@ -29,6 +38,7 @@ mod ser {
 ///
 /// Referenced from https://wiki.metacubex.one/config
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(default)]
 pub struct MihomoConfig {
     pub port: u16,
     pub socks_port: u16,
@@ -45,6 +55,38 @@ pub struct MihomoConfig {
     pub geo_auto_update: Option<bool>,
     pub geo_update_interval: Option<u16>,
     pub geox_url: Option<GeoxUrl>,
+}
+
+impl Default for MihomoConfig {
+    fn default() -> Self {
+        MihomoConfig {
+            port: 7891,
+            socks_port: 7892,
+            mixed_port: Some(7890),
+            allow_lan: Some(false),
+            bind_address: Some(String::from("*")),
+            mode: MihomoMode::Rule,
+            log_level: MihomoLogLevel::Info,
+            ipv6: Some(true),
+            external_controller: Some(String::from("0.0.0.0:9090")),
+            external_ui: Some(String::from("ui")),
+            secret: None,
+            geodata_mode: Some(false),
+            geo_auto_update: Some(true),
+            geo_update_interval: Some(24),
+            geox_url: Some(GeoxUrl {
+                geoip: String::from(
+                    "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat",
+                ),
+                geosite: String::from(
+                    "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat",
+                ),
+                mmdb: String::from(
+                    "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb",
+                ),
+            }),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -80,43 +122,7 @@ pub struct GeoxUrl {
 
 impl Config {
     pub fn new() -> Config {
-        Config {
-            remote_mihomo_binary_url: String::from(""),
-            remote_config_url: String::from(""),
-            mihomo_binary_path: String::from("~/.local/bin/mihomo"),
-            mihomo_config_root: String::from("~/.config/mihomo"),
-            user_systemd_root: String::from("~/.config/systemd/user"),
-            http_user_agent: String::from("mihoro"),
-
-            // https://wiki.metacubex.one/config/general
-            mihomo_config: MihomoConfig {
-                port: 7891,
-                socks_port: 7892,
-                mixed_port: Some(7890),
-                allow_lan: Some(false),
-                bind_address: Some(String::from("*")),
-                mode: MihomoMode::Rule,
-                log_level: MihomoLogLevel::Info,
-                ipv6: Some(true),
-                external_controller: Some(String::from("0.0.0.0:9090")),
-                external_ui: Some(String::from("ui")),
-                secret: None,
-                geodata_mode: Some(false),
-                geo_auto_update: Some(true),
-                geo_update_interval: Some(24),
-                geox_url: Some(GeoxUrl {
-                    geoip: String::from(
-                        "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat",
-                    ),
-                    geosite: String::from(
-                        "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat",
-                    ),
-                    mmdb: String::from(
-                        "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb",
-                    ),
-                }),
-            },
-        }
+        Config::default()
     }
 
     /// Read raw config string from path and parse with crate toml.
