@@ -49,6 +49,7 @@ remote_config_url = ""
 mihomo_binary_path = "~/.local/bin/mihomo"
 mihomo_config_root = "~/.config/mihomo"
 user_systemd_root = "~/.config/systemd/user"
+mihoro_user_agent = "mihoro"
 
 [mihomo_config]
 port = 7890
