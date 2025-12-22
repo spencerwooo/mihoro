@@ -80,7 +80,7 @@ impl Mihoro {
                 &client,
                 &self.config.remote_mihomo_binary_url,
                 temp_path,
-                &self.config.http_user_agent,
+                &self.config.mihoro_user_agent,
             )
             .await?;
 
@@ -107,7 +107,7 @@ impl Mihoro {
             &client,
             &self.config.remote_config_url,
             Path::new(&self.mihomo_target_config_path),
-            &self.config.http_user_agent,
+            &self.config.mihoro_user_agent,
         )
         .await?;
 
@@ -138,7 +138,7 @@ impl Mihoro {
             &client,
             &self.config.remote_config_url,
             Path::new(&self.mihomo_target_config_path),
-            &self.config.http_user_agent,
+            &self.config.mihoro_user_agent,
         )
         .await?;
 
@@ -166,14 +166,14 @@ impl Mihoro {
                     &client,
                     &geox_url.geoip,
                     &Path::new(&self.mihomo_target_config_root).join("geoip.dat"),
-                    &self.config.http_user_agent,
+                    &self.config.mihoro_user_agent,
                 )
                 .await?;
                 download_file(
                     &client,
                     &geox_url.geosite,
                     &Path::new(&self.mihomo_target_config_root).join("geosite.dat"),
-                    &self.config.http_user_agent,
+                    &self.config.mihoro_user_agent,
                 )
                 .await?;
             } else {
@@ -181,7 +181,7 @@ impl Mihoro {
                     &client,
                     &geox_url.mmdb,
                     &Path::new(&self.mihomo_target_config_root).join("country.mmdb"),
-                    &self.config.http_user_agent,
+                    &self.config.mihoro_user_agent,
                 )
                 .await?;
             }
@@ -307,8 +307,8 @@ After=network.target NetworkManager.service systemd-networkd.service iwd.service
 
 [Service]
 Type=simple
-LimitNPROC=500
-LimitNOFILE=1000000
+LimitNPROC=4096
+LimitNOFILE=65536
 Restart=always
 ExecStartPre=/usr/bin/sleep 1s
 ExecStart={} -d {}
