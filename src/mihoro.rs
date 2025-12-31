@@ -1,5 +1,6 @@
-use crate::cmd::ProxyCommands;
+use crate::cmd::{CronCommands, ProxyCommands};
 use crate::config::{apply_mihomo_override, parse_config, Config};
+use crate::cron;
 use crate::proxy::{proxy_export_cmd, proxy_unset_cmd};
 use crate::systemctl::Systemctl;
 use crate::utils::{
@@ -233,6 +234,10 @@ impl Mihoro {
             "{} Disabled and reloaded systemd services",
             self.prefix.green()
         );
+
+        // Disable and remove cron job
+        cron::disable_auto_update(&self.prefix)?;
+
         println!(
             "{} You may need to remove mihomo binary and config directory manually",
             self.prefix.yellow()
@@ -285,6 +290,19 @@ impl Mihoro {
             _ => (),
         }
         Ok(())
+    }
+
+    pub fn cron_commands(&self, command: &Option<CronCommands>) -> Result<()> {
+        match command {
+            Some(CronCommands::Enable) => {
+                cron::enable_auto_update(self.config.auto_update_interval, &self.prefix)
+            }
+            Some(CronCommands::Disable) => cron::disable_auto_update(&self.prefix),
+            Some(CronCommands::Status) => {
+                cron::get_cron_status(&self.prefix, &self.mihomo_target_config_path)
+            }
+            _ => Ok(()),
+        }
     }
 }
 

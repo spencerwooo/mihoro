@@ -50,6 +50,7 @@ mihomo_binary_path = "~/.local/bin/mihomo"
 mihomo_config_root = "~/.config/mihomo"
 user_systemd_root = "~/.config/systemd/user"
 mihoro_user_agent = "mihoro"
+auto_update_interval = 12
 
 [mihomo_config]
 port = 7891
@@ -133,6 +134,26 @@ To overwrite the current mihomo binary for a new version (provided you have upda
 mihoro setup --overwrite
 ``` 
 
+To enable auto-update via cron job:
+
+```bash
+mihoro cron enable
+```
+
+To disable auto-update:
+
+```bash
+mihoro cron disable
+```
+
+To check auto-update status:
+
+```bash
+mihoro cron status
+```
+
+The `auto_update_interval` in `mihoro.toml` controls the update frequency in hours (default: 12, range: 1-24). Set to `0` to disable.
+
 Shell auto-completions are available under `mihoro completions` for bash, fish, zsh:
 
 ```bash
@@ -165,6 +186,7 @@ Commands:
   restart         Restart mihomo.service with systemctl
   log             Check mihomo.service logs with journalctl
   proxy           Output proxy export commands
+  cron            Manage auto-update cron job
   uninstall       Uninstall and remove mihoro and config
   completions     Generate shell completions for mihoro
   help            Print this message or the help of the given subcommand(s)

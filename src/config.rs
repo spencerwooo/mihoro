@@ -16,6 +16,8 @@ pub struct Config {
     pub mihomo_config_root: String,
     pub user_systemd_root: String,
     pub mihoro_user_agent: String,
+    /// Auto-update interval in hours. Set to 0 to disable auto-update.
+    pub auto_update_interval: u16,
     pub mihomo_config: MihomoConfig,
 }
 
@@ -29,6 +31,7 @@ impl Default for Config {
             mihomo_config_root: String::from("~/.config/mihomo"),
             user_systemd_root: String::from("~/.config/systemd/user"),
             mihoro_user_agent: String::from("mihoro"),
+            auto_update_interval: 12,
             mihomo_config: MihomoConfig::default(),
         }
     }
