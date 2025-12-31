@@ -47,6 +47,11 @@ pub enum Commands {
         #[clap(subcommand)]
         shell: Option<ClapShell>,
     },
+    /// Manage auto-update cron job
+    Cron {
+        #[clap(subcommand)]
+        cron: Option<CronCommands>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -73,4 +78,15 @@ pub enum ClapShell {
     // Powershell,
     // #[command(about = "Generate elvish completions")]
     // Elvish,
+}
+
+#[derive(Subcommand)]
+#[command(arg_required_else_help(true))]
+pub enum CronCommands {
+    /// Enable auto-update cron job
+    Enable,
+    /// Disable auto-update cron job
+    Disable,
+    /// Show auto-update cron job status
+    Status,
 }

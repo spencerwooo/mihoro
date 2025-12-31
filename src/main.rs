@@ -1,5 +1,6 @@
 mod cmd;
 mod config;
+mod cron;
 mod mihoro;
 mod proxy;
 mod systemctl;
@@ -89,6 +90,8 @@ async fn cli() -> Result<()> {
             }
             _ => (),
         },
+
+        Some(Commands::Cron { cron }) => mihoro.cron_commands(cron)?,
 
         None => (),
     }
