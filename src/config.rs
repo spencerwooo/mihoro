@@ -268,3 +268,98 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Resu
     fs::write(path, serialized_mihomo_yaml)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_parse_config_creates_default_if_not_exists() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        let result = parse_config(config_path.to_str().unwrap());
+        assert!(result.is_err());
+        assert!(config_path.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_write_and_read() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        let mut config = Config::new();
+        config.remote_config_url = "http://example.com/config.yaml".to_string();
+        config.write(&config_path)?;
+
+        let read_config = Config::setup_from(config_path.to_str().unwrap())?;
+        assert_eq!(
+            read_config.remote_config_url,
+            "http://example.com/config.yaml"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_config_validates_required_fields() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        let toml_content = r#"
+            mihomo_binary_path = "~/.local/bin/mihomo"
+            mihomo_config_root = "~/.config/mihomo"
+            user_systemd_root = "~/.config/systemd/user"
+        "#;
+        fs::write(&config_path, toml_content)?;
+
+        let result = parse_config(config_path.to_str().unwrap());
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("remote_config_url"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_apply_mihomo_override() -> Result<()> {
+        let dir = tempdir()?;
+        let yaml_path = dir.path().join("config.yaml");
+
+        let yaml_content = r#"
+            port: 8080
+            socks-port: 8081
+            mixed-port: 7890
+            allow-lan: false
+            mode: rule
+            log-level: info
+            proxies:
+              - name: "test"
+                type: http
+                server: example.com
+                port: 443
+        "#;
+        fs::write(&yaml_path, yaml_content)?;
+
+        let override_config = MihomoConfig {
+            port: 7891,
+            socks_port: 7892,
+            ..Default::default()
+        };
+
+        apply_mihomo_override(yaml_path.to_str().unwrap(), &override_config)?;
+
+        let updated_content = fs::read_to_string(&yaml_path)?;
+        assert!(updated_content.contains("port: 7891"));
+        assert!(updated_content.contains("socks-port: 7892"));
+        assert!(updated_content.contains("proxies:"));
+
+        Ok(())
+    }
+}

@@ -28,3 +28,6 @@ jobs:
 
       - name: Run cargo check
         run: cargo check --all-targets
+
+      - name: Run tests
+        run: cargo test --all-targets

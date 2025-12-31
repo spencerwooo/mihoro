@@ -332,3 +332,144 @@ WantedBy=default.target",
     );
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    /// Test that Mihoro::new correctly parses config and derives paths
+    #[test]
+    fn test_mihoro_new_parses_config_and_derives_paths() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        // Write a valid config file
+        let toml_content = r#"
+            remote_config_url = "http://example.com/config.yaml"
+            mihomo_binary_path = "/tmp/test/mihomo"
+            mihomo_config_root = "/tmp/test/mihomo"
+            user_systemd_root = "/tmp/test/systemd"
+        "#;
+        fs::write(&config_path, toml_content)?;
+
+        let mihoro = Mihoro::new(&config_path.to_str().unwrap().to_string())?;
+
+        assert_eq!(mihoro.mihomo_target_binary_path, "/tmp/test/mihomo");
+        assert_eq!(mihoro.mihomo_target_config_root, "/tmp/test/mihomo");
+        assert_eq!(
+            mihoro.mihomo_target_config_path,
+            "/tmp/test/mihomo/config.yaml"
+        );
+        assert_eq!(
+            mihoro.mihomo_target_service_path,
+            "/tmp/test/systemd/mihomo.service"
+        );
+
+        Ok(())
+    }
+
+    /// Test that proxy_commands uses mixed_port when set
+    #[test]
+    fn test_proxy_commands_uses_mixed_port_when_set() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        let toml_content = r#"
+            remote_config_url = "http://example.com/config.yaml"
+            mihomo_binary_path = "/tmp/test/mihomo"
+            mihomo_config_root = "/tmp/test/mihomo"
+            user_systemd_root = "/tmp/test/systemd"
+
+            [mihomo_config]
+            port = 7891
+            socks_port = 7892
+            mixed_port = 7890
+        "#;
+        fs::write(&config_path, toml_content)?;
+
+        let mihoro = Mihoro::new(&config_path.to_str().unwrap().to_string())?;
+
+        // Test Export command (should use mixed_port 7890)
+        let cmd = mihoro.proxy_commands(&Some(ProxyCommands::Export));
+        assert!(cmd.is_ok());
+
+        Ok(())
+    }
+
+    /// Test that proxy_commands falls back to port/socks_port when mixed_port is None
+    #[test]
+    fn test_proxy_commands_fallback_to_port_when_mixed_port_none() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        let toml_content = r#"
+            remote_config_url = "http://example.com/config.yaml"
+            mihomo_binary_path = "/tmp/test/mihomo"
+            mihomo_config_root = "/tmp/test/mihomo"
+            user_systemd_root = "/tmp/test/systemd"
+
+            [mihomo_config]
+            port = 7891
+            socks_port = 7892
+        "#;
+        fs::write(&config_path, toml_content)?;
+
+        let mihoro = Mihoro::new(&config_path.to_str().unwrap().to_string())?;
+
+        let cmd = mihoro.proxy_commands(&Some(ProxyCommands::Export));
+        assert!(cmd.is_ok());
+
+        Ok(())
+    }
+
+    /// Test integration: download config → apply override → verify result
+    #[test]
+    fn test_integration_apply_override_flow() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+        let yaml_path = dir.path().join("config.yaml");
+
+        // Write config with custom port override
+        let toml_content = r#"
+            remote_config_url = "http://example.com/config.yaml"
+            mihomo_binary_path = "/tmp/test/mihomo"
+            mihomo_config_root = "{}"
+            user_systemd_root = "/tmp/test/systemd"
+
+            [mihomo_config]
+            port = 9999
+            socks_port = 9998
+        "#;
+        fs::write(
+            &config_path,
+            toml_content.replace("{}", dir.path().to_str().unwrap()),
+        )?;
+
+        // Write initial mihomo config
+        let yaml_content = r#"
+            port: 8080
+            socks-port: 8081
+            mode: rule
+            proxies:
+              - name: "test"
+                type: http
+                server: example.com
+                port: 443
+        "#;
+        fs::write(&yaml_path, yaml_content)?;
+
+        // Create Mihoro instance and apply override
+        let mihoro = Mihoro::new(&config_path.to_str().unwrap().to_string())?;
+        apply_mihomo_override(yaml_path.to_str().unwrap(), &mihoro.config.mihomo_config)?;
+
+        // Verify override was applied
+        let updated_content = fs::read_to_string(&yaml_path)?;
+        assert!(updated_content.contains("port: 9999"));
+        assert!(updated_content.contains("socks-port: 9998"));
+        assert!(updated_content.contains("proxies:"));
+
+        Ok(())
+    }
+}

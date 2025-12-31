@@ -174,3 +174,103 @@ pub fn try_decode_base64_file_inplace(filepath: &str) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_create_parent_dir_creates_directories() -> Result<()> {
+        let dir = tempdir()?;
+        let nested_path = dir.path().join("nested/dir/file.txt");
+
+        create_parent_dir(&nested_path)?;
+
+        let parent = nested_path.parent().unwrap();
+        assert!(parent.exists());
+        Ok(())
+    }
+
+    #[test]
+    fn test_delete_file_removes_existing_file() -> Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.txt");
+        fs::write(&file_path, "test content")?;
+
+        delete_file(file_path.to_str().unwrap(), "prefix")?;
+
+        assert!(!file_path.exists());
+        Ok(())
+    }
+
+    #[test]
+    fn test_delete_file_handles_nonexistent_file() -> Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("nonexistent.txt");
+
+        // Should not error on non-existent file
+        delete_file(file_path.to_str().unwrap(), "prefix")?;
+        assert!(!file_path.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_extract_gzip() -> Result<()> {
+        let dir = tempdir()?;
+        let gzip_path = dir.path().join("test.gz");
+        let output_path = dir.path().join("output.txt");
+
+        // Create a simple gzip file
+        use flate2::write::GzEncoder;
+        use flate2::Compression;
+        use std::io::Write;
+
+        let gzip_file = fs::File::create(&gzip_path)?;
+        let mut encoder = GzEncoder::new(gzip_file, Compression::default());
+        encoder.write_all(b"test content")?;
+        encoder.finish()?;
+
+        extract_gzip(&gzip_path, output_path.to_str().unwrap(), "prefix")?;
+
+        let content = fs::read_to_string(&output_path)?;
+        assert_eq!(content, "test content");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_try_decode_base64_file_inplace_valid_base64() -> Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.txt");
+
+        let encoded = base64::engine::general_purpose::STANDARD.encode("test content");
+        fs::write(&file_path, &encoded)?;
+
+        try_decode_base64_file_inplace(file_path.to_str().unwrap())?;
+
+        let decoded = fs::read_to_string(&file_path)?;
+        assert_eq!(decoded, "test content");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_try_decode_base64_file_inplace_invalid_base64() -> Result<()> {
+        let dir = tempdir()?;
+        let file_path = dir.path().join("test.txt");
+
+        fs::write(&file_path, "not valid base64!!!")?;
+
+        // Should not error on invalid base64
+        try_decode_base64_file_inplace(file_path.to_str().unwrap())?;
+
+        // File should remain unchanged
+        let content = fs::read_to_string(&file_path)?;
+        assert_eq!(content, "not valid base64!!!");
+
+        Ok(())
+    }
+}

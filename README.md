@@ -52,8 +52,8 @@ user_systemd_root = "~/.config/systemd/user"
 mihoro_user_agent = "mihoro"
 
 [mihomo_config]
-port = 7890
-socks_port = 7891
+port = 7891
+socks_port = 7892
 allow_lan = false
 bind_address = "*"
 mode = "rule"
