@@ -73,6 +73,7 @@ pub struct MihomoConfig {
     pub geo_auto_update: Option<bool>,
     pub geo_update_interval: Option<u16>,
     pub geox_url: Option<GeoxUrl>,
+    pub dns: Option<MihomoDnsConfig>,
 }
 
 impl Default for MihomoConfig {
@@ -103,6 +104,7 @@ impl Default for MihomoConfig {
                     "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb",
                 ),
             }),
+            dns: Some(MihomoDnsConfig::default()),
         }
     }
 }
@@ -136,6 +138,27 @@ pub struct GeoxUrl {
     pub geoip: String,
     pub geosite: String,
     pub mmdb: String,
+}
+
+/// DNS configuration for mihomo.
+///
+/// Referenced from https://wiki.metacubex.one/config/dns
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(default)]
+pub struct MihomoDnsConfig {
+    pub enable: Option<bool>,
+    pub listen: Option<String>,
+    pub fake_ip_range: Option<String>,
+}
+
+impl Default for MihomoDnsConfig {
+    fn default() -> Self {
+        MihomoDnsConfig {
+            enable: Some(true),
+            listen: Some(String::from("0.0.0.0:5353")),
+            fake_ip_range: Some(String::from("198.18.0.1/16")),
+        }
+    }
 }
 
 impl Config {
@@ -248,6 +271,24 @@ pub struct MihomoYamlConfig {
     #[serde(rename = "geox-url", skip_serializing_if = "Option::is_none")]
     geox_url: Option<GeoxUrl>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    dns: Option<MihomoDnsYamlConfig>,
+
+    #[serde(flatten)]
+    extra: HashMap<String, serde_yaml::Value>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MihomoDnsYamlConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enable: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    listen: Option<String>,
+
+    #[serde(rename = "fake-ip-range", skip_serializing_if = "Option::is_none")]
+    fake_ip_range: Option<String>,
+
     #[serde(flatten)]
     extra: HashMap<String, serde_yaml::Value>,
 }
@@ -280,6 +321,18 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Resu
     mihomo_yaml.geo_auto_update = override_config.geo_auto_update;
     mihomo_yaml.geo_update_interval = override_config.geo_update_interval;
     mihomo_yaml.geox_url = override_config.geox_url.clone();
+
+    if let Some(ref dns_override) = override_config.dns {
+        let dns = mihomo_yaml.dns.get_or_insert_with(|| MihomoDnsYamlConfig {
+            enable: None,
+            listen: None,
+            fake_ip_range: None,
+            extra: HashMap::new(),
+        });
+        dns.enable = dns_override.enable;
+        dns.listen = dns_override.listen.clone();
+        dns.fake_ip_range = dns_override.fake_ip_range.clone();
+    }
 
     // Write to file
     let serialized_mihomo_yaml = serde_yaml::to_string(&mihomo_yaml)?;
