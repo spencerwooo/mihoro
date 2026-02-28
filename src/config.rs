@@ -74,6 +74,7 @@ pub struct MihomoConfig {
     pub geo_update_interval: Option<u16>,
     pub geox_url: Option<GeoxUrl>,
     pub dns: Option<MihomoDnsConfig>,
+    pub tun: Option<MihomoTunConfig>,
 }
 
 impl Default for MihomoConfig {
@@ -105,6 +106,7 @@ impl Default for MihomoConfig {
                 ),
             }),
             dns: Some(MihomoDnsConfig::default()),
+            tun: Some(MihomoTunConfig::disabled()),
         }
     }
 }
@@ -157,6 +159,40 @@ impl Default for MihomoDnsConfig {
             enable: Some(true),
             listen: Some(String::from("0.0.0.0:5353")),
             fake_ip_range: Some(String::from("198.18.0.1/16")),
+        }
+    }
+}
+
+/// TUN configuration for mihomo.
+///
+/// Referenced from https://wiki.metacubex.one/config/tun
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(default)]
+pub struct MihomoTunConfig {
+    pub enable: Option<bool>,
+    pub stack: Option<String>,
+    pub auto_route: Option<bool>,
+    pub auto_detect_interface: Option<bool>,
+    pub dns_hijack: Option<Vec<String>>,
+}
+
+impl MihomoTunConfig {
+    pub fn disabled() -> Self {
+        MihomoTunConfig {
+            enable: Some(false),
+            ..Default::default()
+        }
+    }
+}
+
+impl Default for MihomoTunConfig {
+    fn default() -> Self {
+        MihomoTunConfig {
+            enable: Some(true),
+            stack: Some(String::from("mixed")),
+            auto_route: Some(true),
+            auto_detect_interface: Some(true),
+            dns_hijack: Some(vec![String::from("any:53"), String::from("tcp://any:53")]),
         }
     }
 }
@@ -274,6 +310,9 @@ pub struct MihomoYamlConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     dns: Option<MihomoDnsYamlConfig>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tun: Option<MihomoTunYamlConfig>,
+
     #[serde(flatten)]
     extra: HashMap<String, serde_yaml::Value>,
 }
@@ -288,6 +327,30 @@ pub struct MihomoDnsYamlConfig {
 
     #[serde(rename = "fake-ip-range", skip_serializing_if = "Option::is_none")]
     fake_ip_range: Option<String>,
+
+    #[serde(flatten)]
+    extra: HashMap<String, serde_yaml::Value>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct MihomoTunYamlConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enable: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stack: Option<String>,
+
+    #[serde(rename = "auto-route", skip_serializing_if = "Option::is_none")]
+    auto_route: Option<bool>,
+
+    #[serde(
+        rename = "auto-detect-interface",
+        skip_serializing_if = "Option::is_none"
+    )]
+    auto_detect_interface: Option<bool>,
+
+    #[serde(rename = "dns-hijack", skip_serializing_if = "Option::is_none")]
+    dns_hijack: Option<Vec<String>>,
 
     #[serde(flatten)]
     extra: HashMap<String, serde_yaml::Value>,
@@ -332,6 +395,22 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Resu
         dns.enable = dns_override.enable;
         dns.listen = dns_override.listen.clone();
         dns.fake_ip_range = dns_override.fake_ip_range.clone();
+    }
+
+    if let Some(ref tun_override) = override_config.tun {
+        let tun = mihomo_yaml.tun.get_or_insert_with(|| MihomoTunYamlConfig {
+            enable: None,
+            stack: None,
+            auto_route: None,
+            auto_detect_interface: None,
+            dns_hijack: None,
+            extra: HashMap::new(),
+        });
+        tun.enable = tun_override.enable;
+        tun.stack = tun_override.stack.clone();
+        tun.auto_route = tun_override.auto_route;
+        tun.auto_detect_interface = tun_override.auto_detect_interface;
+        tun.dns_hijack = tun_override.dns_hijack.clone();
     }
 
     // Write to file
