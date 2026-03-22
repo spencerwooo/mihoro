@@ -4,13 +4,14 @@ use crate::cron;
 use crate::proxy::{proxy_export_cmd, proxy_unset_cmd};
 use crate::resolve_mihomo_bin;
 use crate::systemctl::Systemctl;
+use crate::ui::{install_ui, resolve_external_ui_path};
 use crate::utils::{
     create_parent_dir, delete_file, download_file, extract_gzip, try_decode_base64_file_inplace,
 };
 
 use std::fs;
 use std::os::unix::prelude::PermissionsExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
 use colored::Colorize;
@@ -134,6 +135,9 @@ impl Mihoro {
 
         // Download geodata
         self.update_geodata(&client).await?;
+
+        // Install external UI assets if configured
+        self.update_ui(&client).await?;
 
         // Create mihomo.service systemd file
         create_mihomo_service(
@@ -285,6 +289,34 @@ impl Mihoro {
         Ok(())
     }
 
+    pub async fn update_ui(&self, client: &Client) -> Result<()> {
+        let Some(ui) = self.config.ui.as_ref() else {
+            println!("{} UI management disabled, skipping", self.prefix.yellow());
+            return Ok(());
+        };
+
+        let Some(target_dir) = self.external_ui_target_dir() else {
+            println!(
+                "{} `external_ui` undefined, skipping UI installation",
+                self.prefix.yellow()
+            );
+            return Ok(());
+        };
+
+        println!(
+            "{} Updating external UI assets...",
+            self.prefix.cyan().bold()
+        );
+        install_ui(
+            client,
+            ui,
+            &target_dir,
+            &self.config.mihoro_user_agent,
+            &self.prefix.green(),
+        )
+        .await
+    }
+
     pub async fn apply(&self) -> Result<()> {
         // Apply mihomo config override
         apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config).map(
@@ -388,6 +420,16 @@ impl Mihoro {
             }
             _ => Ok(()),
         }
+    }
+
+    fn external_ui_target_dir(&self) -> Option<PathBuf> {
+        self.config
+            .mihomo_config
+            .external_ui
+            .as_deref()
+            .map(|external_ui| {
+                resolve_external_ui_path(&self.mihomo_target_config_root, external_ui)
+            })
     }
 }
 
@@ -523,6 +565,31 @@ mod tests {
 
         let cmd = mihoro.proxy_commands(&Some(ProxyCommands::Export));
         assert!(cmd.is_ok());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_external_ui_target_dir_resolves_relative_path() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        let toml_content = r#"
+            remote_config_url = "http://example.com/config.yaml"
+            mihomo_binary_path = "/tmp/test/mihomo"
+            mihomo_config_root = "/tmp/test/mihomo"
+            user_systemd_root = "/tmp/test/systemd"
+
+            [mihomo_config]
+            external_ui = "ui"
+        "#;
+        fs::write(&config_path, toml_content)?;
+
+        let mihoro = Mihoro::new(&config_path.to_str().unwrap().to_string())?;
+        assert_eq!(
+            mihoro.external_ui_target_dir(),
+            Some(PathBuf::from("/tmp/test/mihomo/ui"))
+        );
 
         Ok(())
     }

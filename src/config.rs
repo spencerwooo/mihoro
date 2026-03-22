@@ -1,3 +1,4 @@
+use crate::ui::{default_ui, Ui};
 use crate::utils::create_parent_dir;
 
 use std::{collections::HashMap, fs, path::Path};
@@ -21,6 +22,8 @@ pub enum MihomoChannel {
 #[serde(default)]
 pub struct Config {
     pub remote_config_url: String,
+    #[serde(default = "default_ui", skip_serializing_if = "Option::is_none")]
+    pub ui: Option<Ui>,
     pub mihomo_channel: MihomoChannel,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_mihomo_binary_url: Option<String>,
@@ -38,6 +41,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
+            ui: default_ui(),
             remote_mihomo_binary_url: None,
             mihomo_channel: MihomoChannel::default(),
             mihomo_arch: None,
@@ -67,7 +71,7 @@ pub struct MihomoConfig {
     log_level: MihomoLogLevel,
     ipv6: Option<bool>,
     external_controller: Option<String>,
-    external_ui: Option<String>,
+    pub external_ui: Option<String>,
     secret: Option<String>,
     pub geodata_mode: Option<bool>,
     pub geo_auto_update: Option<bool>,
@@ -319,6 +323,7 @@ mod tests {
             read_config.remote_config_url,
             "http://example.com/config.yaml"
         );
+        assert_eq!(read_config.ui, Some(Ui::Metacubexd));
 
         Ok(())
     }
@@ -377,6 +382,25 @@ mod tests {
         assert!(updated_content.contains("port: 7891"));
         assert!(updated_content.contains("socks-port: 7892"));
         assert!(updated_content.contains("proxies:"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_config_uses_default_ui() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        let toml_content = r#"
+            remote_config_url = "http://example.com/config.yaml"
+            mihomo_binary_path = "~/.local/bin/mihomo"
+            mihomo_config_root = "~/.config/mihomo"
+            user_systemd_root = "~/.config/systemd/user"
+        "#;
+        fs::write(&config_path, toml_content)?;
+
+        let config = parse_config(config_path.to_str().unwrap())?;
+        assert_eq!(config.ui, Some(Ui::Metacubexd));
 
         Ok(())
     }
