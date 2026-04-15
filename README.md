@@ -141,7 +141,8 @@ To update `mihomo` binary (core) and/or geodata:
 ```bash
 mihoro update --core     # updates core
 mihoro update --geodata  # updates geodata
-mihoro update --all      # updates config -> core -> geodata -> restarts mihomo
+mihoro update --ui       # updates external UI assets
+mihoro update --all      # updates config -> geodata -> core -> ui -> restarts mihomo
 ```
 
 To enable auto-update via cron job:
@@ -232,7 +233,7 @@ On controlling `mihomo` itself, we recommend using a web-based dashboard. Some o
 
 Web-based dashboards require enabling `external_controller` under `[mihomo_config]`. Applying this config will expose `mihomo`'s control API under this address, which you can then configure your dashboard to use this as its backend.
 
-You can also put the static files of these dashboards under the `external_ui` directory if defined. In this case, `mihomo` will serve the dashboard locally under `{external_controller}/ui`. Please refer to the official documentation of mihomo for more information: [docs/external_controller](https://wiki.metacubex.one/config/general/#api), [docs/external_ui](https://wiki.metacubex.one/config/general/#_7).
+`mihoro` manages dashboard source via top-level `ui` config, which defaults to `metacubexd` and also supports `zashboard`, `yacd-meta`, or `custom:download_url`. The downloaded static files are placed into `mihomo_config.external_ui`. In this case, `mihomo` will serve the dashboard locally under `{external_controller}/ui`. Please refer to the official documentation of mihomo for more information: [docs/external_controller](https://wiki.metacubex.one/config/general/#api), [docs/external_ui](https://wiki.metacubex.one/config/general/#_7).
 
 ## License
 
