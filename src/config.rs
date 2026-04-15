@@ -82,7 +82,7 @@ impl Default for MihomoConfig {
             port: 7891,
             socks_port: 7892,
             mixed_port: Some(7890),
-            redir_port: Some(7893),
+            redir_port: None,
             allow_lan: Some(false),
             bind_address: Some(String::from("*")),
             mode: MihomoMode::Rule,

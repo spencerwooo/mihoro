@@ -52,6 +52,8 @@ The default config will be generated:
 ```toml
 remote_config_url = ""
 mihomo_channel = "stable"
+# remote_mihomo_binary_url = ""  # optional: override mihomo binary download URL
+# mihomo_arch = ""  # optional: override auto-detected CPU architecture
 mihomo_binary_path = "~/.local/bin/mihomo"
 mihomo_config_root = "~/.config/mihomo"
 user_systemd_root = "~/.config/systemd/user"
@@ -62,6 +64,7 @@ auto_update_interval = 12
 port = 7891
 socks_port = 7892
 mixed_port = 7890
+# redir_port = 7893  # optional: transparent TCP proxy port (for iptables REDIRECT)
 allow_lan = false
 bind_address = "*"
 mode = "rule"
@@ -69,6 +72,7 @@ log_level = "info"
 ipv6 = true
 external_controller = "0.0.0.0:9090"
 external_ui = "ui"
+# secret = ""  # optional: API secret for external_controller
 geodata_mode = false
 geo_auto_update = true
 geo_update_interval = 24
