@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh 
 Optionally, download over a mirror:
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -s -- --mirror https://ghfast.top
+curl -fsSL https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -s -- --mirror https://gh-proxy.org
 ```
 
 > [!IMPORTANT]
