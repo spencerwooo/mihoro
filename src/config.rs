@@ -71,9 +71,9 @@ pub struct MihomoConfig {
     mode: MihomoMode,
     log_level: MihomoLogLevel,
     ipv6: Option<bool>,
-    external_controller: Option<String>,
+    pub external_controller: Option<String>,
     pub external_ui: Option<String>,
-    secret: Option<String>,
+    pub secret: Option<String>,
     pub geodata_mode: Option<bool>,
     pub geo_auto_update: Option<bool>,
     pub geo_update_interval: Option<u16>,
@@ -163,39 +163,61 @@ impl Config {
     }
 }
 
+/// Load config from path without validation.  Returns `Ok(None)` if the file does not exist.
+pub fn load_config(path: &str) -> Result<Option<Config>> {
+    let config_path = Path::new(path);
+    if !config_path.exists() {
+        return Ok(None);
+    }
+    Ok(Some(Config::setup_from(path)?))
+}
+
+/// Write default config to path if it does not exist.  Returns `true` if the file was created.
+pub fn write_default_if_missing(path: &str) -> Result<bool> {
+    let config_path = Path::new(path);
+    create_parent_dir(config_path)?;
+    if config_path.exists() {
+        return Ok(false);
+    }
+    Config::new().write(config_path)?;
+    Ok(true)
+}
+
+/// Validate that required config fields are non-empty.
+pub fn validate_config(config: &Config) -> Result<()> {
+    let required_fields = [
+        ("remote_config_url", &config.remote_config_url),
+        ("mihomo_binary_path", &config.mihomo_binary_path),
+        ("mihomo_config_root", &config.mihomo_config_root),
+        ("user_systemd_root", &config.user_systemd_root),
+    ];
+    for (field, value) in required_fields.iter() {
+        if value.is_empty() {
+            bail!("`{}` undefined", field);
+        }
+    }
+    Ok(())
+}
+
 /// Tries to parse mihoro config as toml from path.
 ///
-/// * If config file does not exist, creates default config file to path and returns error.
-/// * If found, tries to parse the file and returns error if parse fails or fields found undefined.
+/// * If config file does not exist, creates default config file and returns an error directing
+///   the user to run `mihoro init`.
+/// * If found, parses the file and validates required fields.
 pub fn parse_config(path: &str) -> Result<Config> {
-    // Create mihoro default config if not exists
     let config_path = Path::new(path);
     create_parent_dir(config_path)?;
 
     if !config_path.exists() {
         Config::new().write(config_path)?;
         bail!(
-            "created default config at `{path}`, run again to finish setup",
-            path = path.underline()
+            "created default config at `{}`, run `mihoro init` to finish setup",
+            path.underline()
         );
     }
 
-    // Parse config file
     let config = Config::setup_from(path)?;
-    let required_urls = [
-        ("remote_config_url", &config.remote_config_url),
-        ("mihomo_binary_path", &config.mihomo_binary_path),
-        ("mihomo_config_root", &config.mihomo_config_root),
-        ("user_systemd_root", &config.user_systemd_root),
-    ];
-
-    // Validate if urls are defined
-    for (field, value) in required_urls.iter() {
-        if value.is_empty() {
-            bail!("`{}` undefined", field)
-        }
-    }
-
+    validate_config(&config)?;
     Ok(config)
 }
 
