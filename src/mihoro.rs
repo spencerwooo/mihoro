@@ -271,7 +271,9 @@ impl Mihoro {
         let is_enabled = Systemctl::is_enabled("mihomo.service");
 
         if is_active && is_enabled {
-            return Ok(StageStatus::Skipped("already running and enabled".to_string()));
+            return Ok(StageStatus::Skipped(
+                "already running and enabled".to_string(),
+            ));
         }
 
         if !is_enabled {
