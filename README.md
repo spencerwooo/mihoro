@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh 
 After installing `mihoro`, initialize its config `~/.config/mihoro.toml` first by:
 
 ```bash
-mihoro setup
+mihoro init
 ```
 
 The default config will be generated:
@@ -91,13 +91,25 @@ Example:
 remote_config_url = "https://tt.vg/freeclash"  # DO NOT USE THIS IF YOU CAN!
 ```
 
-Customize other settings as needed, then, run setup once more:
+Customize other settings as needed, then run init once more:
 
 ```bash
-mihoro setup
+mihoro init
 ```
 
-... to start downloading `mihomo` binary, your remote config, and geodata.
+... to download the `mihomo` binary, your remote config, geodata, and start the systemd service.
+
+`init` is idempotent — re-running it skips any artifacts that are already in place. Use `--force` to re-download everything:
+
+```bash
+mihoro init --force
+```
+
+Use `-y` / `--yes` to skip interactive prompts and fail fast if required config fields are missing (useful in scripts):
+
+```bash
+mihoro init --yes
+```
 
 > [!CAUTION]
 >
@@ -206,7 +218,7 @@ Mihomo CLI client on Linux.
 Usage: mihoro [OPTIONS] [COMMAND]
 
 Commands:
-  setup        Setup mihoro by downloading mihomo binary and remote config
+  init         Initialize mihoro: download binary, config, geodata, and set up the systemd service
   update       Update mihomo components (config by default)
   apply        Apply mihomo config overrides and restart mihomo.service
   start        Start mihomo.service with systemctl
