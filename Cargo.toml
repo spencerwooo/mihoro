@@ -1,7 +1,7 @@
 [package]
 name = "mihoro"
 description = "Mihomo CLI client on Linux."
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 readme = "README.md"
 license = "MIT"
@@ -30,11 +30,13 @@ reqwest = { version = "0.12", features = ["stream"] }
 futures-util = "0.3"
 indicatif = "0.17"
 tokio = { version = "1.44", features = ["full"] }
+tokio-retry = "0.3"
 truncatable = "0.1"
 anyhow = "1.0"
 base64 = "0.22"
 tempfile = "3.18"
 tar = "0.4"
+dialoguer = { version = "0.11", default-features = false }
 self_update = { version = "0.42", default-features = false, features = [
     "archive-tar",
     "compression-flate2",

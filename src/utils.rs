@@ -3,6 +3,7 @@ use std::{
     fs::{self, File},
     io::{self, BufWriter, Read, Seek, SeekFrom, Write},
     path::Path,
+    time::Duration,
 };
 
 use anyhow::{Context, Result};
@@ -12,7 +13,30 @@ use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::Client;
+use tokio_retry::{
+    strategy::{jitter, ExponentialBackoff},
+    Retry,
+};
 use truncatable::Truncatable;
+
+/// Total number of retries attempted on top of the initial request.
+pub const MAX_RETRIES: usize = 3;
+pub const DETAIL_PREFIX: &str = "   ";
+
+/// Shared retry strategy for HTTP operations.
+///
+/// Yields up to [`MAX_RETRIES`] retries (so up to `MAX_RETRIES + 1` total attempts) with
+/// exponential backoff of ~1s, ~2s, ~4s, each with jitter and capped at 5s.
+/// `ExponentialBackoff::from_millis(2).factor(500)` seeds `current = 2` and multiplies by
+/// `base = 2` each step, so the yielded delays are `2 * 500`, `4 * 500`, `8 * 500`, ... ms
+/// before jitter.
+pub fn retry_strategy() -> impl Iterator<Item = Duration> {
+    ExponentialBackoff::from_millis(2)
+        .factor(500)
+        .max_delay(Duration::from_secs(5))
+        .map(jitter)
+        .take(MAX_RETRIES)
+}
 
 /// Creates the parent directory for a given path if it does not exist.
 ///
@@ -32,8 +56,40 @@ pub fn create_parent_dir(path: &Path) -> Result<()> {
 
 /// Download file from url to path with a reusable http client.
 ///
+/// Performs the initial request, then retries up to [`MAX_RETRIES`] more times on any
+/// failure (connection, HTTP status, stream, or IO error). Each attempt truncates the
+/// destination file.
+pub async fn download_file(
+    client: &Client,
+    url: &str,
+    path: &Path,
+    user_agent: &str,
+) -> Result<()> {
+    let mut attempt = 0usize;
+    Retry::spawn(retry_strategy(), || {
+        // attempt = 0 is the initial request; retries are 1..=MAX_RETRIES.
+        let retry_no = attempt;
+        attempt += 1;
+        async move {
+            if retry_no > 0 {
+                println!(
+                    "{} Retrying download (attempt {}/{})...",
+                    DETAIL_PREFIX.yellow(),
+                    retry_no,
+                    MAX_RETRIES
+                );
+            }
+            download_file_once(client, url, path, user_agent).await
+        }
+    })
+    .await
+}
+
+/// Single-shot download with progress bar. Called by [`download_file`] on each retry.
+///
 /// Renders a progress bar if content-length is available from the url headers provided. If not,
-/// renders a spinner to indicate that something is downloading.
+/// renders a spinner to indicate that something is downloading. On failure the bar is cleared so
+/// the next retry renders cleanly.
 ///
 /// With reference from:
 /// * https://github.com/mihaigalos/tutorials/blob/800d5acbc333fd4068622e9b3d870cb5b7d34e12/rust/download_with_progressbar/src/main.rs
@@ -41,7 +97,7 @@ pub fn create_parent_dir(path: &Path) -> Result<()> {
 ///
 /// Note: Allow `clippy::unused_io_amount` because we are writing downloaded chunks on the fly.
 #[allow(clippy::unused_io_amount)]
-pub async fn download_file(
+async fn download_file_once(
     client: &Client,
     url: &str,
     path: &Path,
@@ -64,13 +120,13 @@ pub async fn download_file(
     let pb = ProgressBar::new(total_size);
 
     let bar_style = ProgressStyle::with_template(
-        "{prefix:.blue}: {msg}\n          {elapsed_precise} [{bar:30.white/blue}] \
-         {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
+        "{prefix:.cyan} Downloading {msg}\n{prefix:.cyan} {elapsed_precise} \
+         [{bar:30.white/cyan}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
     )?
-    .progress_chars("-  ");
+    .progress_chars("=> ");
     let spinner_style = ProgressStyle::with_template(
-        "{prefix:.blue}: {wide_msg}\n        \
-         {spinner} {elapsed_precise} - Download speed {bytes_per_sec}",
+        "{prefix:.cyan} Downloading {wide_msg}\n{prefix:.cyan} \
+         {spinner} {elapsed_precise} \u{2014} {bytes_per_sec}",
     )?;
 
     if total_size == 0 {
@@ -78,51 +134,67 @@ pub async fn download_file(
     } else {
         pb.set_style(bar_style);
     }
-    pb.set_prefix("download");
+    pb.set_prefix(DETAIL_PREFIX);
 
     let truncated_url = Truncatable::from(url)
         .truncator("...".into())
         .truncate(64)
         .underline();
-    pb.set_message(format!("Downloading {truncated_url}"));
+    pb.set_message(format!("{truncated_url}"));
 
-    // Start file download and update progress bar when new data chunk is received
-    let mut file = File::create(path)?;
-    let mut downloaded: u64 = 0;
-    let mut stream = res.bytes_stream();
+    // Perform the streamed write in a scoped async block so we can clean up the progress bar
+    // regardless of success or failure.
+    let result: Result<()> = async {
+        let mut file = File::create(path)?;
+        let mut downloaded: u64 = 0;
+        let mut stream = res.bytes_stream();
 
-    while let Some(item) = stream.next().await {
-        let chunk = item.with_context(|| "error while downloading file")?;
+        while let Some(item) = stream.next().await {
+            let chunk = item.with_context(|| "error while downloading file")?;
 
-        file.write(&chunk)
-            .with_context(|| "error while writing to file")?;
-        if total_size != 0 {
-            let new = min(downloaded + (chunk.len() as u64), total_size);
-            downloaded = new;
-            pb.set_position(new);
-        } else {
-            pb.inc(chunk.len() as u64);
+            file.write(&chunk)
+                .with_context(|| "error while writing to file")?;
+            if total_size != 0 {
+                let new = min(downloaded + (chunk.len() as u64), total_size);
+                downloaded = new;
+                pb.set_position(new);
+            } else {
+                pb.inc(chunk.len() as u64);
+            }
         }
+        Ok(())
+    }
+    .await;
+
+    match &result {
+        Ok(()) => {
+            // Clear the progress bar and print a single summary line so the output
+            // stays visually aligned inside the stage body output.
+            pb.finish_and_clear();
+            println!(
+                "{} Downloaded to {}",
+                DETAIL_PREFIX.cyan(),
+                path.to_str().unwrap_or("").underline()
+            );
+        }
+        // Clear the bar before the outer retry loop prints its next message.
+        Err(_) => pb.finish_and_clear(),
     }
 
-    pb.finish_with_message(format!(
-        "Downloaded to {}",
-        path.to_str().unwrap().underline()
-    ));
-    Ok(())
+    result
 }
 
-pub fn delete_file(path: &str, prefix: &str) -> Result<()> {
+pub fn delete_file(path: &str, prefix: impl std::fmt::Display) -> Result<()> {
     // Delete file if exists
     if Path::new(path).exists() {
         fs::remove_file(path).map(|_| {
-            println!("{} Removed {}", prefix.cyan(), path.underline().yellow());
+            println!("{} Removed {}", prefix, path.underline().yellow());
         })?;
     }
     Ok(())
 }
 
-pub fn extract_gzip(from_path: &Path, to_path: &str, prefix: &str) -> Result<()> {
+pub fn extract_gzip(from_path: &Path, to_path: &str, prefix: impl std::fmt::Display) -> Result<()> {
     // Create parent directory for extraction dest if not exists
     create_parent_dir(Path::new(to_path))?;
 
@@ -131,11 +203,7 @@ pub fn extract_gzip(from_path: &Path, to_path: &str, prefix: &str) -> Result<()>
     let mut file = File::create(to_path)?;
     io::copy(&mut archive, &mut file)?;
     // fs::remove_file(gzip_path)?;
-    println!(
-        "{} Extracted to {}",
-        prefix.green(),
-        to_path.underline().yellow()
-    );
+    println!("{} Extracted to {}", prefix, to_path.underline().yellow());
     Ok(())
 }
 

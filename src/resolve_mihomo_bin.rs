@@ -1,8 +1,10 @@
 use crate::config::{Config, MihomoChannel};
+use crate::utils::{retry_strategy, DETAIL_PREFIX, MAX_RETRIES};
 
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
 use reqwest::Client;
+use tokio_retry::Retry;
 
 const STABLE_VERSION_URL: &str =
     "https://github.com/MetaCubeX/mihomo/releases/latest/download/version.txt";
@@ -10,6 +12,8 @@ const ALPHA_VERSION_URL: &str =
     "https://github.com/MetaCubeX/mihomo/releases/download/Prerelease-Alpha/version.txt";
 
 /// Fetches the latest Mihomo version from GitHub based on the release channel.
+///
+/// Retries up to 3 attempts total with exponential backoff on any failure.
 pub async fn fetch_latest_version(
     client: &Client,
     channel: &MihomoChannel,
@@ -20,6 +24,26 @@ pub async fn fetch_latest_version(
         MihomoChannel::Alpha => ALPHA_VERSION_URL,
     };
 
+    let mut attempt = 0usize;
+    Retry::spawn(retry_strategy(), || {
+        let retry_no = attempt;
+        attempt += 1;
+        async move {
+            if retry_no > 0 {
+                println!(
+                    "{} Retrying version fetch (attempt {}/{})...",
+                    DETAIL_PREFIX.yellow(),
+                    retry_no,
+                    MAX_RETRIES
+                );
+            }
+            fetch_latest_version_once(client, url, user_agent).await
+        }
+    })
+    .await
+}
+
+async fn fetch_latest_version_once(client: &Client, url: &str, user_agent: &str) -> Result<String> {
     let response = client
         .get(url)
         .header("User-Agent", user_agent)

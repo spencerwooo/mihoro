@@ -110,7 +110,7 @@ pub async fn install_ui(
     ui: &Ui,
     target_dir: &Path,
     user_agent: &str,
-    prefix: &str,
+    prefix: impl std::fmt::Display,
 ) -> Result<()> {
     let archive_file = NamedTempFile::new()?;
     download_file(client, ui.download_url(), archive_file.path(), user_agent).await?;

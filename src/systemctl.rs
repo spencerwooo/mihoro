@@ -59,4 +59,28 @@ impl Systemctl {
             .wait()
             .with_context(|| "failed to execute systemctl")
     }
+
+    /// Returns `true` if the given user service is currently active.
+    pub fn is_active(service: &str) -> bool {
+        Command::new("systemctl")
+            .arg("--user")
+            .arg("is-active")
+            .arg("--quiet")
+            .arg(service)
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    }
+
+    /// Returns `true` if the given user service is enabled for autostart.
+    pub fn is_enabled(service: &str) -> bool {
+        Command::new("systemctl")
+            .arg("--user")
+            .arg("is-enabled")
+            .arg("--quiet")
+            .arg(service)
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    }
 }

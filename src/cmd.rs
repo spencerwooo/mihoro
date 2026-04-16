@@ -12,11 +12,15 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Setup mihoro by downloading mihomo binary and remote config
-    Setup {
-        /// Force download mihomo binary even if it already exists
+    /// Initialize mihoro: download binary, config, geodata, and set up the systemd service
+    Init {
+        /// Re-download all artifacts even if they already exist
         #[arg(long)]
-        overwrite: bool,
+        force: bool,
+
+        /// Non-interactive mode: fail if required config fields are missing instead of prompting
+        #[arg(short = 'y', long)]
+        yes: bool,
 
         /// Override architecture detection
         ///
@@ -25,6 +29,17 @@ pub enum Commands {
         /// arm64, armv5, armv6, armv7, loong64-abi1/abi2, mips-hardfloat,
         /// mips-softfloat, mips64, mips64le, mipsle-hardfloat, mipsle-softfloat,
         /// ppc64le, riscv64, s390x
+        #[arg(long)]
+        arch: Option<String>,
+    },
+    /// Deprecated: use `mihoro init` instead
+    #[command(hide = true)]
+    Setup {
+        /// Force download mihomo binary even if it already exists
+        #[arg(long)]
+        overwrite: bool,
+
+        /// Override architecture detection
         #[arg(long)]
         arch: Option<String>,
     },
