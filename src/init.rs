@@ -177,10 +177,7 @@ pub async fn run(config_path: &str, client: &Client, opts: InitOptions) -> Resul
     // https_proxy=http://127.0.0.1:<port>).  The actual service stop + binary
     // swap is deferred to the "install binary" stage after all downloads finish.
 
-    report.begin(
-        "mihomo binary",
-        Some("Resolve the target build and download the mihomo release archive"),
-    );
+    report.begin("mihomo binary", Some("downloading mihomo binary"));
     let binary_temp = match mihoro.prepare_binary(client, force, arch).await {
         Ok(BinaryPlan::Install(temp)) => {
             report.record("mihomo binary", StageStatus::Installed);
@@ -199,21 +196,19 @@ pub async fn run(config_path: &str, client: &Client, opts: InitOptions) -> Resul
     report
         .run(
             "remote config",
-            Some("Download the remote config and apply local mihoro.toml overrides"),
+            Some("downloading and merging remote config"),
             || mihoro.ensure_remote_config(client, force),
         )
         .await;
     report
-        .run(
-            "geodata",
-            Some("Download geoip / geosite data files required by mihomo"),
-            || mihoro.ensure_geodata(client, force),
-        )
+        .run("geodata", Some("downloading geodata"), || {
+            mihoro.ensure_geodata(client, force)
+        })
         .await;
     report
         .run(
             "web dashboard",
-            Some("Download and install the configured web UI assets"),
+            Some("downloading dashboard assets"),
             || mihoro.ensure_ui(client, force),
         )
         .await;
@@ -223,8 +218,8 @@ pub async fn run(config_path: &str, client: &Client, opts: InitOptions) -> Resul
     // All network calls are done.  Now it is safe to stop the running service
     // (which also tears down the proxy) and swap in the new binary.
     //
-    // If the remote config stage failed we must not proceed: installing a new
-    // binary or restarting the service on top of a missing / corrupt config.yaml
+    // If remote config stage failed we must not proceed: installing a new
+    // binary or restarting mihomo.service on top of a missing / corrupt config.yaml
     // would break an environment that may have been working before.
 
     if report.stage_failed("remote config") {
@@ -233,10 +228,7 @@ pub async fn run(config_path: &str, client: &Client, opts: InitOptions) -> Resul
         report.record("systemd service", skip());
         report.record("service start", skip());
     } else {
-        report.begin(
-            "install binary",
-            Some("Install the downloaded mihomo binary into the configured path"),
-        );
+        report.begin("install binary", Some("installing mihomo binary"));
         let install_status = match binary_temp {
             None => StageStatus::Skipped("nothing to install".to_string()),
             Some(temp) => match mihoro.install_binary(temp).await {
@@ -247,14 +239,18 @@ pub async fn run(config_path: &str, client: &Client, opts: InitOptions) -> Resul
         report.record("install binary", install_status);
 
         report
-            .run("systemd service", None, || async {
-                mihoro.ensure_service().await
-            })
+            .run(
+                "systemd service",
+                Some("writing systemd service"),
+                || async { mihoro.ensure_service().await },
+            )
             .await;
         report
-            .run("service start", None, || async {
-                mihoro.ensure_service_running().await
-            })
+            .run(
+                "service start",
+                Some("starting and enabling mihomo.service"),
+                || async { mihoro.ensure_service_running().await },
+            )
             .await;
     }
 

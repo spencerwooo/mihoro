@@ -144,41 +144,35 @@ async fn cli() -> Result<()> {
             arch,
             ui,
         }) => {
-            println!("{} update", "mihoro:".cyan().bold());
+            println!("{} update initiated", "mihoro:".cyan().bold());
             let mut report = StageReport::new();
 
             if *all {
                 report
-                    .run(
-                        "config",
-                        Some("Download the remote config and apply local overrides"),
-                        || mihoro.update_config(&client),
-                    )
+                    .run("config", Some("refreshing remote config"), || {
+                        mihoro.update_config(&client)
+                    })
                     .await;
                 report
-                    .run(
-                        "geodata",
-                        Some("Refresh geoip / geosite data used by mihomo"),
-                        || mihoro.update_geodata(&client),
-                    )
+                    .run("geodata", Some("refreshing geodata"), || {
+                        mihoro.update_geodata(&client)
+                    })
                     .await;
                 report
-                    .run(
-                        "ui",
-                        Some("Download and install the configured web dashboard"),
-                        || mihoro.update_ui(&client),
-                    )
+                    .run("ui", Some("refreshing dashboard assets"), || {
+                        mihoro.update_ui(&client)
+                    })
                     .await;
                 report
-                    .run(
-                        "core",
-                        Some("Download and install the latest mihomo core binary"),
-                        || mihoro.update_core(&client, arch.as_deref()),
-                    )
+                    .run("core", Some("refreshing mihomo core"), || {
+                        mihoro.update_core(&client, arch.as_deref())
+                    })
                     .await;
                 if !report.has_failures() {
                     report
-                        .run("service restart", None, || mihoro.restart_service())
+                        .run("service restart", Some("restarting mihomo.service"), || {
+                            mihoro.restart_service()
+                        })
                         .await;
                 } else {
                     report.record(
@@ -188,15 +182,15 @@ async fn cli() -> Result<()> {
                 }
             } else if *core {
                 report
-                    .run(
-                        "core",
-                        Some("Download and install the latest mihomo core binary"),
-                        || mihoro.update_core(&client, arch.as_deref()),
-                    )
+                    .run("core", Some("refreshing mihomo core"), || {
+                        mihoro.update_core(&client, arch.as_deref())
+                    })
                     .await;
                 if !report.has_failures() {
                     report
-                        .run("service restart", None, || mihoro.restart_service())
+                        .run("service restart", Some("restarting mihomo.service"), || {
+                            mihoro.restart_service()
+                        })
                         .await;
                 } else {
                     report.record(
@@ -206,31 +200,27 @@ async fn cli() -> Result<()> {
                 }
             } else if *ui {
                 report
-                    .run(
-                        "ui",
-                        Some("Download and install the configured web dashboard"),
-                        || mihoro.update_ui(&client),
-                    )
+                    .run("ui", Some("refreshing dashboard assets"), || {
+                        mihoro.update_ui(&client)
+                    })
                     .await;
             } else if *geodata {
                 report
-                    .run(
-                        "geodata",
-                        Some("Refresh geoip / geosite data used by mihomo"),
-                        || mihoro.update_geodata(&client),
-                    )
+                    .run("geodata", Some("refreshing geodata"), || {
+                        mihoro.update_geodata(&client)
+                    })
                     .await;
             } else if *config || (!*core && !*geodata && !*ui) {
                 report
-                    .run(
-                        "config",
-                        Some("Download the remote config and apply local overrides"),
-                        || mihoro.update_config(&client),
-                    )
+                    .run("config", Some("refreshing remote config"), || {
+                        mihoro.update_config(&client)
+                    })
                     .await;
                 if !report.has_failures() {
                     report
-                        .run("service restart", None, || mihoro.restart_service())
+                        .run("service restart", Some("restarting mihomo.service"), || {
+                            mihoro.restart_service()
+                        })
                         .await;
                 } else {
                     report.record(
