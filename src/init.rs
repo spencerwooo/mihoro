@@ -177,7 +177,7 @@ pub async fn run(config_path: &str, client: &Client, opts: InitOptions) -> Resul
     // https_proxy=http://127.0.0.1:<port>).  The actual service stop + binary
     // swap is deferred to the "install binary" stage after all downloads finish.
 
-    report.begin("mihomo binary", Some("downloading the mihomo binary"));
+    report.begin("mihomo binary", Some("downloading mihomo binary"));
     let binary_temp = match mihoro.prepare_binary(client, force, arch).await {
         Ok(BinaryPlan::Install(temp)) => {
             report.record("mihomo binary", StageStatus::Installed);

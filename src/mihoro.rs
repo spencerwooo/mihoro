@@ -541,7 +541,7 @@ impl Mihoro {
     }
 }
 
-/// Render the systemd unit file content for the mihomo service.
+/// Render the systemd unit file content for mihomo.service.
 ///
 /// Reference: https://wiki.metacubex.one/startup/service/
 fn render_service_string(binary_path: &str, config_root: &str) -> String {
