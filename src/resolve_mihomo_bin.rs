@@ -1,5 +1,5 @@
 use crate::config::{Config, MihomoChannel};
-use crate::utils::{retry_strategy, DETAIL_PREFIX, MAX_RETRIES};
+use crate::utils::{resolve_download_url, retry_strategy, DETAIL_PREFIX, MAX_RETRIES};
 
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
@@ -44,12 +44,13 @@ pub async fn fetch_latest_version(
 }
 
 async fn fetch_latest_version_once(client: &Client, url: &str, user_agent: &str) -> Result<String> {
+    let resolved_url = resolve_download_url(url);
     let response = client
-        .get(url)
+        .get(resolved_url.as_ref())
         .header("User-Agent", user_agent)
         .send()
         .await
-        .with_context(|| format!("failed to fetch version from '{}'", url))?;
+        .with_context(|| format!("failed to fetch version from '{}'", resolved_url.as_ref()))?;
 
     response.error_for_status_ref()?;
 

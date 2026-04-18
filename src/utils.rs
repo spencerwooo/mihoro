@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     cmp::min,
     fs::{self, File},
     io::{self, BufWriter, Read, Seek, SeekFrom, Write},
@@ -22,6 +23,7 @@ use truncatable::Truncatable;
 /// Total number of retries attempted on top of the initial request.
 pub const MAX_RETRIES: usize = 3;
 pub const DETAIL_PREFIX: &str = "   ";
+pub const MIHORO_GITHUB_MIRROR_ENV: &str = "MIHORO_GITHUB_MIRROR";
 
 /// Shared retry strategy for HTTP operations.
 ///
@@ -52,6 +54,47 @@ pub fn create_parent_dir(path: &Path) -> Result<()> {
         fs::create_dir_all(parent_dir)?;
     }
     Ok(())
+}
+
+fn github_mirror_base() -> Option<String> {
+    let mirror = std::env::var(MIHORO_GITHUB_MIRROR_ENV).ok()?;
+    let mirror = mirror.trim().trim_end_matches('/').to_string();
+    if mirror.is_empty() {
+        return None;
+    }
+    Some(mirror)
+}
+
+fn is_github_download_host(host: &str) -> bool {
+    host == "github.com" || host.ends_with(".githubusercontent.com")
+}
+
+/// Prefix GitHub-hosted download urls with the configured mirror, if any.
+///
+/// This intentionally excludes `api.github.com` so API metadata requests continue to use
+/// GitHub directly while large artifact downloads can still flow through a mirror.
+pub fn resolve_download_url(url: &str) -> Cow<'_, str> {
+    let Some(mirror) = github_mirror_base() else {
+        return Cow::Borrowed(url);
+    };
+
+    let Ok(parsed) = reqwest::Url::parse(url) else {
+        return Cow::Borrowed(url);
+    };
+
+    let Some(host) = parsed.host_str() else {
+        return Cow::Borrowed(url);
+    };
+
+    if !is_github_download_host(host) {
+        return Cow::Borrowed(url);
+    }
+
+    if url == mirror || url.starts_with(&format!("{mirror}/")) {
+        return Cow::Borrowed(url);
+    }
+
+    Cow::Owned(format!("{mirror}/{url}"))
 }
 
 /// Download file from url to path with a reusable http client.
@@ -103,16 +146,18 @@ async fn download_file_once(
     path: &Path,
     user_agent: &str,
 ) -> Result<()> {
+    let resolved_url = resolve_download_url(url);
+
     // Create parent directory for download destination if not exists
     create_parent_dir(path)?;
 
     // Create shared http client for multiple downloads when possible
     let res = client
-        .get(url)
+        .get(resolved_url.as_ref())
         .header("User-Agent", user_agent)
         .send()
         .await
-        .with_context(|| format!("failed to GET from '{}'", &url))?;
+        .with_context(|| format!("failed to GET from '{}'", resolved_url.as_ref()))?;
     res.error_for_status_ref()?;
 
     // If content length is not available or 0, use a spinner instead of a progress bar
@@ -123,7 +168,7 @@ async fn download_file_once(
         "{prefix:.cyan} Downloading {msg}\n{prefix:.cyan} {elapsed_precise} \
          [{bar:30.white/cyan}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
     )?
-    .progress_chars("=> ");
+    .progress_chars("-> ");
     let spinner_style = ProgressStyle::with_template(
         "{prefix:.cyan} Downloading {wide_msg}\n{prefix:.cyan} \
          {spinner} {elapsed_precise} \u{2014} {bytes_per_sec}",
@@ -246,8 +291,16 @@ pub fn try_decode_base64_file_inplace(filepath: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
+    use std::{
+        fs,
+        sync::{Mutex, OnceLock},
+    };
     use tempfile::tempdir;
+
+    fn env_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
 
     #[test]
     fn test_create_parent_dir_creates_directories() -> Result<()> {
@@ -340,5 +393,39 @@ mod tests {
         assert_eq!(content, "not valid base64!!!");
 
         Ok(())
+    }
+
+    #[test]
+    fn test_resolve_download_url_uses_mirror_for_github_downloads() {
+        let _guard = env_lock().lock().unwrap();
+        std::env::set_var(MIHORO_GITHUB_MIRROR_ENV, "https://gh-proxy.org/");
+
+        let resolved = resolve_download_url(
+            "https://github.com/MetaCubeX/mihomo/releases/latest/download/version.txt",
+        );
+        assert_eq!(
+            resolved.as_ref(),
+            "https://gh-proxy.org/https://github.com/MetaCubeX/mihomo/releases/latest/download/version.txt"
+        );
+
+        std::env::remove_var(MIHORO_GITHUB_MIRROR_ENV);
+    }
+
+    #[test]
+    fn test_resolve_download_url_keeps_non_github_urls_and_api_urls() {
+        let _guard = env_lock().lock().unwrap();
+        std::env::set_var(MIHORO_GITHUB_MIRROR_ENV, "https://gh-proxy.org");
+
+        assert_eq!(
+            resolve_download_url("https://example.com/file.tar.gz").as_ref(),
+            "https://example.com/file.tar.gz"
+        );
+        assert_eq!(
+            resolve_download_url("https://api.github.com/repos/spencerwooo/mihoro/releases/latest")
+                .as_ref(),
+            "https://api.github.com/repos/spencerwooo/mihoro/releases/latest"
+        );
+
+        std::env::remove_var(MIHORO_GITHUB_MIRROR_ENV);
     }
 }

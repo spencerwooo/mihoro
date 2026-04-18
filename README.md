@@ -49,13 +49,21 @@ mihoro init
 
 If `~/.config/mihoro.toml` does not exist yet, `mihoro init` will create it, prompt for your remote `mihomo` or `clash` subscription URL, save it, then finish the full onboarding flow in the same run.
 
-That single command will:
+Upon onboarding, `mihoro` will:
 
 - download the `mihomo` core binary
 - download your remote config and apply local overrides
 - download geodata and the default web dashboard
 - install and enable `mihomo.service`
 - start the service and print the local dashboard URL
+
+You can also proxy GitHub-hosted runtime downloads by setting `MIHORO_GITHUB_MIRROR` before commands such as `mihoro init` or `mihoro update`:
+
+```shell
+MIHORO_GITHUB_MIRROR=https://gh-proxy.org mihoro init
+```
+
+Note that this only applies to GitHub-hosted resource downloads and does not affect `mihoro upgrade` yet.
 
 The generated config uses sensible defaults, including `metacubexd` as the managed dashboard:
 

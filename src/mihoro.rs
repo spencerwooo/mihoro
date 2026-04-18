@@ -122,7 +122,7 @@ impl Mihoro {
     ///
     /// Must run *after* every other network-dependent stage; see [`BinaryPlan`].
     pub async fn install_binary(&self, temp_file: NamedTempFile) -> Result<StageStatus> {
-        // Stop the service before overwriting to avoid "Text file busy".
+        // Stop mihomo.service before overwriting to avoid "Text file busy".
         let binary_exists = fs::metadata(&self.mihomo_target_binary_path).is_ok();
         if binary_exists {
             println!(
@@ -264,7 +264,7 @@ impl Mihoro {
 
     /// Enable and start mihomo.service, ensuring both autostart and current-session state.
     ///
-    /// Always enables the service so it survives reboots, even if it was already running but
+    /// Always enables mihomo.service so it survives reboots, even if it was already running but
     /// not enabled (e.g. started manually after a previous failed init).
     pub async fn ensure_service_running(&self) -> Result<StageStatus> {
         let is_active = Systemctl::is_active("mihomo.service");
@@ -321,7 +321,7 @@ impl Mihoro {
         )
         .await?;
 
-        // Stop the service before overwriting binary to avoid "Text file busy" error
+        // Stop mihomo.service before overwriting binary to avoid "Text file busy" error
         println!(
             "{} Stopping mihomo.service before overwriting...",
             DETAIL_PREFIX.yellow()
