@@ -1,3 +1,4 @@
+use crate::ui::{default_ui, Ui};
 use crate::utils::create_parent_dir;
 
 use std::{collections::HashMap, fs, path::Path};
@@ -21,6 +22,8 @@ pub enum MihomoChannel {
 #[serde(default)]
 pub struct Config {
     pub remote_config_url: String,
+    #[serde(default = "default_ui", skip_serializing_if = "Option::is_none")]
+    pub ui: Option<Ui>,
     pub mihomo_channel: MihomoChannel,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_mihomo_binary_url: Option<String>,
@@ -38,6 +41,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
+            ui: default_ui(),
             remote_mihomo_binary_url: None,
             mihomo_channel: MihomoChannel::default(),
             mihomo_arch: None,
@@ -61,14 +65,15 @@ pub struct MihomoConfig {
     pub port: u16,
     pub socks_port: u16,
     pub mixed_port: Option<u16>,
+    pub redir_port: Option<u16>,
     pub allow_lan: Option<bool>,
     pub bind_address: Option<String>,
     mode: MihomoMode,
     log_level: MihomoLogLevel,
     ipv6: Option<bool>,
-    external_controller: Option<String>,
-    external_ui: Option<String>,
-    secret: Option<String>,
+    pub external_controller: Option<String>,
+    pub external_ui: Option<String>,
+    pub secret: Option<String>,
     pub geodata_mode: Option<bool>,
     pub geo_auto_update: Option<bool>,
     pub geo_update_interval: Option<u16>,
@@ -83,6 +88,7 @@ impl Default for MihomoConfig {
             port: 7891,
             socks_port: 7892,
             mixed_port: Some(7890),
+            redir_port: None,
             allow_lan: Some(false),
             bind_address: Some(String::from("*")),
             mode: MihomoMode::Rule,
@@ -216,39 +222,61 @@ impl Config {
     }
 }
 
+/// Load config from path without validation.  Returns `Ok(None)` if the file does not exist.
+pub fn load_config(path: &str) -> Result<Option<Config>> {
+    let config_path = Path::new(path);
+    if !config_path.exists() {
+        return Ok(None);
+    }
+    Ok(Some(Config::setup_from(path)?))
+}
+
+/// Write default config to path if it does not exist.  Returns `true` if the file was created.
+pub fn write_default_if_missing(path: &str) -> Result<bool> {
+    let config_path = Path::new(path);
+    create_parent_dir(config_path)?;
+    if config_path.exists() {
+        return Ok(false);
+    }
+    Config::new().write(config_path)?;
+    Ok(true)
+}
+
+/// Validate that required config fields are non-empty.
+pub fn validate_config(config: &Config) -> Result<()> {
+    let required_fields = [
+        ("remote_config_url", &config.remote_config_url),
+        ("mihomo_binary_path", &config.mihomo_binary_path),
+        ("mihomo_config_root", &config.mihomo_config_root),
+        ("user_systemd_root", &config.user_systemd_root),
+    ];
+    for (field, value) in required_fields.iter() {
+        if value.is_empty() {
+            bail!("`{}` undefined", field);
+        }
+    }
+    Ok(())
+}
+
 /// Tries to parse mihoro config as toml from path.
 ///
-/// * If config file does not exist, creates default config file to path and returns error.
-/// * If found, tries to parse the file and returns error if parse fails or fields found undefined.
+/// * If config file does not exist, creates default config file and returns an error directing
+///   the user to run `mihoro init`.
+/// * If found, parses the file and validates required fields.
 pub fn parse_config(path: &str) -> Result<Config> {
-    // Create mihoro default config if not exists
     let config_path = Path::new(path);
     create_parent_dir(config_path)?;
 
     if !config_path.exists() {
         Config::new().write(config_path)?;
         bail!(
-            "created default config at `{path}`, run again to finish setup",
-            path = path.underline()
+            "created default config at `{}`, run `mihoro init` to finish setup",
+            path.underline()
         );
     }
 
-    // Parse config file
     let config = Config::setup_from(path)?;
-    let required_urls = [
-        ("remote_config_url", &config.remote_config_url),
-        ("mihomo_binary_path", &config.mihomo_binary_path),
-        ("mihomo_config_root", &config.mihomo_config_root),
-        ("user_systemd_root", &config.user_systemd_root),
-    ];
-
-    // Validate if urls are defined
-    for (field, value) in required_urls.iter() {
-        if value.is_empty() {
-            bail!("`{}` undefined", field)
-        }
-    }
-
+    validate_config(&config)?;
     Ok(config)
 }
 
@@ -265,6 +293,9 @@ pub struct MihomoYamlConfig {
 
     #[serde(rename = "mixed-port", skip_serializing_if = "Option::is_none")]
     mixed_port: Option<u16>,
+
+    #[serde(rename = "redir-port", skip_serializing_if = "Option::is_none")]
+    redir_port: Option<u16>,
 
     #[serde(rename = "allow-lan", skip_serializing_if = "Option::is_none")]
     allow_lan: Option<bool>,
@@ -372,6 +403,7 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Resu
     mihomo_yaml.port = Some(override_config.port);
     mihomo_yaml.socks_port = Some(override_config.socks_port);
     mihomo_yaml.mixed_port = override_config.mixed_port;
+    mihomo_yaml.redir_port = override_config.redir_port;
     mihomo_yaml.allow_lan = override_config.allow_lan;
     mihomo_yaml.bind_address = override_config.bind_address.clone();
     mihomo_yaml.mode = Some(override_config.mode.clone());
@@ -451,6 +483,7 @@ mod tests {
             read_config.remote_config_url,
             "http://example.com/config.yaml"
         );
+        assert_eq!(read_config.ui, Some(Ui::Metacubexd));
 
         Ok(())
     }
@@ -486,6 +519,7 @@ mod tests {
             port: 8080
             socks-port: 8081
             mixed-port: 7890
+            redir-port: 7893
             allow-lan: false
             mode: rule
             log-level: info
@@ -509,6 +543,25 @@ mod tests {
         assert!(updated_content.contains("port: 7891"));
         assert!(updated_content.contains("socks-port: 7892"));
         assert!(updated_content.contains("proxies:"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_config_uses_default_ui() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+
+        let toml_content = r#"
+            remote_config_url = "http://example.com/config.yaml"
+            mihomo_binary_path = "~/.local/bin/mihomo"
+            mihomo_config_root = "~/.config/mihomo"
+            user_systemd_root = "~/.config/systemd/user"
+        "#;
+        fs::write(&config_path, toml_content)?;
+
+        let config = parse_config(config_path.to_str().unwrap())?;
+        assert_eq!(config.ui, Some(Ui::Metacubexd));
 
         Ok(())
     }

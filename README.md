@@ -31,26 +31,37 @@ curl -fsSL https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh 
 Optionally, download over a mirror:
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -s -- --mirror https://ghfast.top
+curl -fsSL https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh | sh -s -- --mirror https://gh-proxy.org
 ```
 
 > [!IMPORTANT]
 > `mihoro` is installed to `~/.local/bin` by default. Ensure this is on your `$PATH`.
 
-## Setup
+## Initialize
 
 `mihoro`, like `mihomo`, is a config-based CLI client.
 
-After installing `mihoro`, initialize its config `~/.config/mihoro.toml` first by:
+After installing `mihoro`, run:
 
 ```bash
-mihoro setup
+mihoro init
 ```
 
-The default config will be generated:
+If `~/.config/mihoro.toml` does not exist yet, `mihoro init` will create it, prompt for your remote `mihomo` or `clash` subscription URL, save it, then finish the full onboarding flow in the same run.
+
+That single command will:
+
+- download the `mihomo` core binary
+- download your remote config and apply local overrides
+- download geodata and the default web dashboard
+- install and enable `mihomo.service`
+- start the service and print the local dashboard URL
+
+The generated config uses sensible defaults, including `metacubexd` as the managed dashboard:
 
 ```toml
-remote_config_url = ""
+remote_config_url = "https://example.com/subscription"
+ui = "metacubexd"
 mihomo_channel = "stable"
 mihomo_binary_path = "~/.local/bin/mihomo"
 mihomo_config_root = "~/.config/mihomo"
@@ -79,25 +90,25 @@ geosite = "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/ge
 mmdb = "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb"
 ```
 
-**Before doing anything, fill in `remote_config_url`, which is your remote `mihomo` or `clash` subscription url.**
+By default, `ui = "metacubexd"` enables dashboard management, so `mihoro init` also downloads the web UI assets and serves them from `http://127.0.0.1:9090/ui/`.
 
-Example:
-
-```toml
-remote_config_url = "https://tt.vg/freeclash"  # DO NOT USE THIS IF YOU CAN!
-```
-
-Customize other settings as needed, then, run setup once more:
+`init` is idempotent — re-running it skips any artifacts that are already in place. Use `--force` to re-download everything:
 
 ```bash
-mihoro setup
+mihoro init --force
 ```
 
-... to start downloading `mihomo` binary, your remote config, and geodata.
+For non-interactive environments, pre-populate `remote_config_url` in `mihoro.toml` and use:
 
-> [!CAUTION]
->
-> :warning: **DISCLAIMER!** Use your own `remote_config_url` at all times! The link provided comes from a **free, third-party** Clash/Mihomo provider, and `mihoro` cannot guarantee its integrity.
+```bash
+mihoro init --yes
+```
+
+Use `--arch` if auto-detection picks the wrong mihomo build for your machine:
+
+```bash
+mihoro init --arch amd64-v3
+```
 
 ## Usage
 
@@ -137,7 +148,8 @@ To update `mihomo` binary (core) and/or geodata:
 ```bash
 mihoro update --core     # updates core
 mihoro update --geodata  # updates geodata
-mihoro update --all      # updates config -> core -> geodata -> restarts mihomo
+mihoro update --ui       # updates external UI assets
+mihoro update --all      # updates config -> geodata -> core -> ui -> restarts mihomo
 ```
 
 To enable auto-update via cron job:
@@ -201,7 +213,7 @@ Mihomo CLI client on Linux.
 Usage: mihoro [OPTIONS] [COMMAND]
 
 Commands:
-  setup        Setup mihoro by downloading mihomo binary and remote config
+  init         Initialize mihoro: download binary, config, geodata, and set up the systemd service
   update       Update mihomo components (config by default)
   apply        Apply mihomo config overrides and restart mihomo.service
   start        Start mihomo.service with systemctl
@@ -228,7 +240,7 @@ On controlling `mihomo` itself, we recommend using a web-based dashboard. Some o
 
 Web-based dashboards require enabling `external_controller` under `[mihomo_config]`. Applying this config will expose `mihomo`'s control API under this address, which you can then configure your dashboard to use this as its backend.
 
-You can also put the static files of these dashboards under the `external_ui` directory if defined. In this case, `mihomo` will serve the dashboard locally under `{external_controller}/ui`. Please refer to the official documentation of mihomo for more information: [docs/external_controller](https://wiki.metacubex.one/config/general/#api), [docs/external_ui](https://wiki.metacubex.one/config/general/#_7).
+`mihoro` manages dashboard source via top-level `ui` config, which defaults to `metacubexd` and also supports `zashboard`, `yacd-meta`, or `custom:download_url`. The downloaded static files are placed into `mihomo_config.external_ui`. In this case, `mihomo` will serve the dashboard locally under `{external_controller}/ui`. Please refer to the official documentation of mihomo for more information: [docs/external_controller](https://wiki.metacubex.one/config/general/#api), [docs/external_ui](https://wiki.metacubex.one/config/general/#_7).
 
 ## License
 
