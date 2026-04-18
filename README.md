@@ -37,23 +37,32 @@ curl -fsSL https://raw.githubusercontent.com/spencerwooo/mihoro/main/install.sh 
 > [!IMPORTANT]
 > `mihoro` is installed to `~/.local/bin` by default. Ensure this is on your `$PATH`.
 
-## Setup
+## Initialize
 
 `mihoro`, like `mihomo`, is a config-based CLI client.
 
-After installing `mihoro`, initialize its config `~/.config/mihoro.toml` first by:
+After installing `mihoro`, run:
 
 ```bash
 mihoro init
 ```
 
-The default config will be generated:
+If `~/.config/mihoro.toml` does not exist yet, `mihoro init` will create it, prompt for your remote `mihomo` or `clash` subscription URL, save it, then finish the full onboarding flow in the same run.
+
+That single command will:
+
+- download the `mihomo` core binary
+- download your remote config and apply local overrides
+- download geodata and the default web dashboard
+- install and enable `mihomo.service`
+- start the service and print the local dashboard URL
+
+The generated config uses sensible defaults, including `metacubexd` as the managed dashboard:
 
 ```toml
-remote_config_url = ""
+remote_config_url = "https://example.com/subscription"
+ui = "metacubexd"
 mihomo_channel = "stable"
-# remote_mihomo_binary_url = ""  # optional: override mihomo binary download URL
-# mihomo_arch = ""  # optional: override auto-detected CPU architecture
 mihomo_binary_path = "~/.local/bin/mihomo"
 mihomo_config_root = "~/.config/mihomo"
 user_systemd_root = "~/.config/systemd/user"
@@ -64,7 +73,6 @@ auto_update_interval = 12
 port = 7891
 socks_port = 7892
 mixed_port = 7890
-# redir_port = 7893  # optional: transparent TCP proxy port (for iptables REDIRECT)
 allow_lan = false
 bind_address = "*"
 mode = "rule"
@@ -72,7 +80,6 @@ log_level = "info"
 ipv6 = true
 external_controller = "0.0.0.0:9090"
 external_ui = "ui"
-# secret = ""  # optional: API secret for external_controller
 geodata_mode = false
 geo_auto_update = true
 geo_update_interval = 24
@@ -83,21 +90,7 @@ geosite = "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/ge
 mmdb = "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb"
 ```
 
-**Before doing anything, fill in `remote_config_url`, which is your remote `mihomo` or `clash` subscription url.**
-
-Example:
-
-```toml
-remote_config_url = "https://tt.vg/freeclash"  # DO NOT USE THIS IF YOU CAN!
-```
-
-Customize other settings as needed, then run init once more:
-
-```bash
-mihoro init
-```
-
-... to download the `mihomo` binary, your remote config, geodata, and start the systemd service.
+By default, `ui = "metacubexd"` enables dashboard management, so `mihoro init` also downloads the web UI assets and serves them from `http://127.0.0.1:9090/ui/`.
 
 `init` is idempotent — re-running it skips any artifacts that are already in place. Use `--force` to re-download everything:
 
@@ -105,15 +98,17 @@ mihoro init
 mihoro init --force
 ```
 
-Use `-y` / `--yes` to skip interactive prompts and fail fast if required config fields are missing (useful in scripts):
+For non-interactive environments, pre-populate `remote_config_url` in `mihoro.toml` and use:
 
 ```bash
 mihoro init --yes
 ```
 
-> [!CAUTION]
->
-> :warning: **DISCLAIMER!** Use your own `remote_config_url` at all times! The link provided comes from a **free, third-party** Clash/Mihomo provider, and `mihoro` cannot guarantee its integrity.
+Use `--arch` if auto-detection picks the wrong mihomo build for your machine:
+
+```bash
+mihoro init --arch amd64-v3
+```
 
 ## Usage
 
