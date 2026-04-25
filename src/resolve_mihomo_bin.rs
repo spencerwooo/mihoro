@@ -11,6 +11,12 @@ const STABLE_VERSION_URL: &str =
 const ALPHA_VERSION_URL: &str =
     "https://github.com/MetaCubeX/mihomo/releases/download/Prerelease-Alpha/version.txt";
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedBinary {
+    pub url: String,
+    pub version: Option<String>,
+}
+
 /// Fetches the latest Mihomo version from GitHub based on the release channel.
 ///
 /// Retries up to 3 attempts total with exponential backoff on any failure.
@@ -192,12 +198,12 @@ pub fn build_download_url(version: &str, arch: &str, channel: &MihomoChannel) ->
 ///
 /// If `remote_mihomo_binary_url` is set in the config, returns it directly.
 /// Otherwise, auto-detects the architecture and fetches the latest version from GitHub.
-pub async fn resolve_binary_url(
+pub async fn resolve_binary(
     client: &Client,
     config: &Config,
     arch_override: Option<&str>,
     prefix: &str,
-) -> Result<String> {
+) -> Result<ResolvedBinary> {
     // If a URL is explicitly configured, use it directly
     if let Some(ref url) = config.remote_mihomo_binary_url {
         if !url.is_empty() {
@@ -206,7 +212,10 @@ pub async fn resolve_binary_url(
                 prefix.cyan(),
                 url.underline()
             );
-            return Ok(url.clone());
+            return Ok(ResolvedBinary {
+                url: url.clone(),
+                version: None,
+            });
         }
     }
 
@@ -241,7 +250,21 @@ pub async fn resolve_binary_url(
     );
 
     let url = build_download_url(&version, &arch, channel);
-    Ok(url)
+    Ok(ResolvedBinary {
+        url,
+        version: Some(version),
+    })
+}
+
+pub async fn resolve_binary_url(
+    client: &Client,
+    config: &Config,
+    arch_override: Option<&str>,
+    prefix: &str,
+) -> Result<String> {
+    Ok(resolve_binary(client, config, arch_override, prefix)
+        .await?
+        .url)
 }
 
 #[cfg(test)]

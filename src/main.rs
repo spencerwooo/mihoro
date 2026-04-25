@@ -82,6 +82,12 @@ impl StageReport {
             .iter()
             .any(|(_, status)| matches!(status, StageStatus::Failed(_)))
     }
+
+    fn has_installed(&self, name: &'static str) -> bool {
+        self.entries.iter().any(|(entry_name, status)| {
+            *entry_name == name && matches!(status, StageStatus::Installed)
+        })
+    }
 }
 
 #[tokio::main]
@@ -186,16 +192,21 @@ async fn cli() -> Result<()> {
                         mihoro.update_core(&client, arch.as_deref())
                     })
                     .await;
-                if !report.has_failures() {
+                if !report.has_failures() && report.has_installed("core") {
                     report
                         .run("service restart", Some("restarting mihomo.service"), || {
                             mihoro.restart_service()
                         })
                         .await;
-                } else {
+                } else if report.has_failures() {
                     report.record(
                         "service restart",
                         StageStatus::Skipped("skipped due to earlier failures".to_string()),
+                    );
+                } else {
+                    report.record(
+                        "service restart",
+                        StageStatus::Skipped("core already up to date".to_string()),
                     );
                 }
             } else if *ui {
