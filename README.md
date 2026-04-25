@@ -55,7 +55,7 @@ Upon onboarding, `mihoro` will:
 - download your remote config and apply local overrides
 - download geodata and the default web dashboard
 - install and enable `mihomo.service`
-- start the service and print the local dashboard URL
+- start the service and print dashboard URLs for the configured controller
 
 You can also proxy GitHub-hosted runtime downloads by setting `MIHORO_GITHUB_MIRROR` before commands such as `mihoro init` or `mihoro update`:
 
@@ -98,7 +98,7 @@ geosite = "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/ge
 mmdb = "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb"
 ```
 
-By default, `ui = "metacubexd"` enables dashboard management, so `mihoro init` also downloads the web UI assets and serves them from `http://127.0.0.1:9090/ui/`.
+By default, `ui = "metacubexd"` enables dashboard management, so `mihoro init` also downloads the web UI assets and serves them from the configured `external_controller`. When the controller binds all interfaces, `mihoro init` prints localhost plus detected non-loopback machine IPs such as LAN or Tailscale/ZeroTier addresses.
 
 `init` is idempotent — re-running it skips any artifacts that are already in place. Use `--force` to re-download everything:
 

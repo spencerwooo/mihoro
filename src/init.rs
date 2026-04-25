@@ -1,11 +1,12 @@
 use crate::config::{load_config, validate_config, write_default_if_missing, Config};
 use crate::mihoro::{BinaryPlan, Mihoro, StageStatus};
 
-use std::{future::Future, path::Path};
+use std::{collections::HashSet, future::Future, net::IpAddr, path::Path};
 
 use anyhow::{bail, Result};
 use colored::Colorize;
 use dialoguer::Input;
+use local_ip_address::list_afinet_netifas;
 use reqwest::Client;
 use shellexpand::tilde;
 
@@ -93,14 +94,154 @@ impl StageReport {
 // Dashboard URL helper
 // ---------------------------------------------------------------------------
 
-fn dashboard_url(config: &Config) -> Option<String> {
-    let controller = config.mihomo_config.external_controller.as_deref()?;
+#[derive(Debug, PartialEq, Eq)]
+struct DashboardUrl {
+    label: &'static str,
+    url: String,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct ControllerAddress<'a> {
+    host: &'a str,
+    port: &'a str,
+}
+
+fn dashboard_urls(config: &Config) -> Option<Vec<DashboardUrl>> {
+    let interfaces = list_afinet_netifas().unwrap_or_default();
+    dashboard_urls_from_interfaces(config, &interfaces)
+}
+
+fn dashboard_urls_from_interfaces(
+    config: &Config,
+    interfaces: &[(String, IpAddr)],
+) -> Option<Vec<DashboardUrl>> {
+    let external_ui = config.mihomo_config.external_ui.as_deref()?.trim();
+    if external_ui.is_empty() {
+        return None;
+    }
+
+    let controller =
+        parse_controller_address(config.mihomo_config.external_controller.as_deref()?)?;
+    let mut urls = Vec::new();
+
+    if is_wildcard_host(controller.host) {
+        urls.push(DashboardUrl {
+            label: "Local",
+            url: dashboard_url("127.0.0.1", controller.port),
+        });
+        for ip in dashboard_interface_ips(interfaces) {
+            urls.push(DashboardUrl {
+                label: "External",
+                url: dashboard_url(&format_ip_host(ip), controller.port),
+            });
+        }
+    } else {
+        let label = if is_loopback_host(controller.host) {
+            "Local"
+        } else {
+            "Dashboard"
+        };
+        urls.push(DashboardUrl {
+            label,
+            url: dashboard_url(controller.host, controller.port),
+        });
+    }
+
+    dedup_dashboard_urls(urls)
+}
+
+fn parse_controller_address(controller: &str) -> Option<ControllerAddress<'_>> {
+    let controller = controller
+        .trim()
+        .trim_start_matches("http://")
+        .trim_start_matches("https://")
+        .trim_end_matches('/');
+
+    if let Some(rest) = controller.strip_prefix('[') {
+        let (host, rest) = rest.split_once(']')?;
+        let port = rest.strip_prefix(':')?;
+        return Some(ControllerAddress {
+            host: controller.get(..host.len() + 2)?,
+            port,
+        });
+    }
+
     let (host, port) = controller.rsplit_once(':')?;
-    let host = match host {
-        "0.0.0.0" | "[::]" | "" => "127.0.0.1",
-        h => h,
-    };
-    Some(format!("http://{host}:{port}/ui/"))
+    Some(ControllerAddress {
+        host: host.trim(),
+        port: port.trim(),
+    })
+}
+
+fn dashboard_interface_ips(interfaces: &[(String, IpAddr)]) -> Vec<IpAddr> {
+    interfaces
+        .iter()
+        .filter(|(name, ip)| is_dashboard_interface(name) && is_external_dashboard_ip(ip))
+        .map(|(_, ip)| *ip)
+        .collect()
+}
+
+fn is_dashboard_interface(name: &str) -> bool {
+    let name = name.to_ascii_lowercase();
+    !matches!(
+        name.as_str(),
+        "lo" | "docker0" | "podman0" | "cni0" | "virbr0" | "lxdbr0"
+    ) && !name.starts_with("br-")
+        && !name.starts_with("veth")
+        && !name.starts_with("flannel")
+        && !name.starts_with("kube")
+}
+
+fn is_external_dashboard_ip(ip: &IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(ip) => {
+            !ip.is_loopback()
+                && !ip.is_unspecified()
+                && !ip.is_link_local()
+                && !ip.is_broadcast()
+                && !ip.is_multicast()
+        }
+        IpAddr::V6(_) => false,
+    }
+}
+
+fn is_wildcard_host(host: &str) -> bool {
+    matches!(host.trim(), "" | "*" | "0.0.0.0" | "::" | "[::]")
+}
+
+fn is_loopback_host(host: &str) -> bool {
+    let host = host.trim();
+    host.eq_ignore_ascii_case("localhost")
+        || matches!(host, "127.0.0.1" | "::1" | "[::1]")
+        || host
+            .parse::<IpAddr>()
+            .map(|ip| ip.is_loopback())
+            .unwrap_or(false)
+}
+
+fn format_ip_host(ip: IpAddr) -> String {
+    match ip {
+        IpAddr::V4(ip) => ip.to_string(),
+        IpAddr::V6(ip) => format!("[{ip}]"),
+    }
+}
+
+fn dashboard_url(host: &str, port: &str) -> String {
+    format!("http://{host}:{port}/ui")
+}
+
+fn dedup_dashboard_urls(urls: Vec<DashboardUrl>) -> Option<Vec<DashboardUrl>> {
+    let mut seen = HashSet::new();
+    let urls = urls
+        .into_iter()
+        .filter(|entry| seen.insert(entry.url.clone()))
+        .collect::<Vec<_>>();
+
+    if urls.is_empty() {
+        None
+    } else {
+        Some(urls)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -258,9 +399,24 @@ pub async fn run(config_path: &str, client: &Client, opts: InitOptions) -> Resul
 
     // Print dashboard URL if UI is configured
     if config.ui.is_some() {
-        if let Some(url) = dashboard_url(&config) {
+        if let Some(urls) = dashboard_urls(&config) {
             println!();
-            println!("  {}: {}", "Dashboard".bold(), url.underline().cyan());
+            if urls.len() == 1 && urls[0].label == "Dashboard" {
+                println!(
+                    "  {}: {}",
+                    "Dashboard".bold(),
+                    urls[0].url.as_str().underline().cyan()
+                );
+            } else {
+                println!("  {}:", "Dashboard".bold());
+                for entry in &urls {
+                    println!(
+                        "    {}: {}",
+                        entry.label.bold(),
+                        entry.url.as_str().underline().cyan()
+                    );
+                }
+            }
             let ui_name = config
                 .ui
                 .as_ref()
@@ -289,4 +445,123 @@ pub async fn run(config_path: &str, client: &Client, opts: InitOptions) -> Resul
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::net::{Ipv4Addr, Ipv6Addr};
+
+    fn config_with_controller(controller: &str) -> Config {
+        let mut config = Config::default();
+        config.mihomo_config.external_controller = Some(controller.to_string());
+        config.mihomo_config.external_ui = Some("ui".to_string());
+        config
+    }
+
+    #[test]
+    fn dashboard_urls_include_real_interfaces_for_wildcard_controller() {
+        let config = config_with_controller("0.0.0.0:19090");
+        let interfaces = vec![
+            ("lo".to_string(), IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1))),
+            (
+                "eth0".to_string(),
+                IpAddr::V4(Ipv4Addr::new(10, 108, 25, 191)),
+            ),
+            (
+                "tailscale0".to_string(),
+                IpAddr::V4(Ipv4Addr::new(100, 120, 119, 21)),
+            ),
+            (
+                "docker0".to_string(),
+                IpAddr::V4(Ipv4Addr::new(172, 17, 0, 1)),
+            ),
+        ];
+
+        let urls = dashboard_urls_from_interfaces(&config, &interfaces).unwrap();
+
+        assert_eq!(
+            urls,
+            vec![
+                DashboardUrl {
+                    label: "Local",
+                    url: "http://127.0.0.1:19090/ui".to_string(),
+                },
+                DashboardUrl {
+                    label: "External",
+                    url: "http://10.108.25.191:19090/ui".to_string(),
+                },
+                DashboardUrl {
+                    label: "External",
+                    url: "http://100.120.119.21:19090/ui".to_string(),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn dashboard_urls_keep_loopback_controller_local_only() {
+        let config = config_with_controller("127.0.0.1:9090");
+        let interfaces = vec![(
+            "eth0".to_string(),
+            IpAddr::V4(Ipv4Addr::new(10, 108, 25, 191)),
+        )];
+
+        let urls = dashboard_urls_from_interfaces(&config, &interfaces).unwrap();
+
+        assert_eq!(
+            urls,
+            vec![DashboardUrl {
+                label: "Local",
+                url: "http://127.0.0.1:9090/ui".to_string(),
+            }]
+        );
+    }
+
+    #[test]
+    fn dashboard_urls_keep_explicit_controller_host() {
+        let config = config_with_controller("10.108.25.191:19090");
+        let interfaces = vec![(
+            "tailscale0".to_string(),
+            IpAddr::V4(Ipv4Addr::new(100, 120, 119, 21)),
+        )];
+
+        let urls = dashboard_urls_from_interfaces(&config, &interfaces).unwrap();
+
+        assert_eq!(
+            urls,
+            vec![DashboardUrl {
+                label: "Dashboard",
+                url: "http://10.108.25.191:19090/ui".to_string(),
+            }]
+        );
+    }
+
+    #[test]
+    fn dashboard_urls_skip_ipv6_interfaces_for_now() {
+        let config = config_with_controller("[::]:19090");
+        let interfaces = vec![(
+            "wlan0".to_string(),
+            IpAddr::V6(Ipv6Addr::new(0xfd00, 0, 0, 0, 0, 0, 0, 1)),
+        )];
+
+        let urls = dashboard_urls_from_interfaces(&config, &interfaces).unwrap();
+
+        assert_eq!(
+            urls,
+            vec![DashboardUrl {
+                label: "Local",
+                url: "http://127.0.0.1:19090/ui".to_string(),
+            }]
+        );
+    }
+
+    #[test]
+    fn dashboard_urls_are_hidden_without_external_ui() {
+        let mut config = config_with_controller("0.0.0.0:19090");
+        config.mihomo_config.external_ui = None;
+
+        assert_eq!(dashboard_urls_from_interfaces(&config, &[]), None);
+    }
 }
