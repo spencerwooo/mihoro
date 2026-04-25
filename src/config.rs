@@ -291,7 +291,9 @@ pub struct MihomoYamlConfig {
 /// * Fields defined in `mihoro.toml` will override the downloaded remote `config.yaml`.
 /// * Fields undefined will be removed from the downloaded `config.yaml`.
 /// * Fields not supported by `mihoro` will be kept as is.
-pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Result<()> {
+///
+/// Returns `true` when the file contents had to change.
+pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Result<bool> {
     let raw_mihomo_yaml = fs::read_to_string(path)?;
     let mut mihomo_yaml: MihomoYamlConfig = serde_yaml::from_str(&raw_mihomo_yaml)?;
 
@@ -313,10 +315,16 @@ pub fn apply_mihomo_override(path: &str, override_config: &MihomoConfig) -> Resu
     mihomo_yaml.geo_update_interval = override_config.geo_update_interval;
     mihomo_yaml.geox_url = override_config.geox_url.clone();
 
-    // Write to file
+    // Avoid rewriting already-current YAML just because formatting or map order changed.
     let serialized_mihomo_yaml = serde_yaml::to_string(&mihomo_yaml)?;
+    let raw_value: serde_yaml::Value = serde_yaml::from_str(&raw_mihomo_yaml)?;
+    let serialized_value: serde_yaml::Value = serde_yaml::from_str(&serialized_mihomo_yaml)?;
+    if raw_value == serialized_value {
+        return Ok(false);
+    }
+
     fs::write(path, serialized_mihomo_yaml)?;
-    Ok(())
+    Ok(true)
 }
 
 #[cfg(test)]
@@ -405,13 +413,51 @@ mod tests {
             ..Default::default()
         };
 
-        apply_mihomo_override(yaml_path.to_str().unwrap(), &override_config)?;
+        let changed = apply_mihomo_override(yaml_path.to_str().unwrap(), &override_config)?;
+        assert!(changed);
 
         let updated_content = fs::read_to_string(&yaml_path)?;
         assert!(updated_content.contains("port: 7891"));
         assert!(updated_content.contains("socks-port: 7892"));
         assert!(updated_content.contains("proxies:"));
 
+        Ok(())
+    }
+
+    #[test]
+    fn test_apply_mihomo_override_skips_when_yaml_already_matches() -> Result<()> {
+        let dir = tempdir()?;
+        let yaml_path = dir.path().join("config.yaml");
+
+        let yaml_content = r#"
+            port: 7891
+            socks-port: 7892
+            mixed-port: 7890
+            allow-lan: false
+            bind-address: "*"
+            mode: rule
+            log-level: info
+            ipv6: true
+            external-controller: 0.0.0.0:9090
+            external-ui: ui
+            geodata-mode: false
+            geo-auto-update: true
+            geo-update-interval: 24
+            geox-url:
+              geoip: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat
+              geosite: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
+              mmdb: https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb
+            proxies:
+              - name: "test"
+                type: http
+                server: example.com
+                port: 443
+        "#;
+        fs::write(&yaml_path, yaml_content)?;
+
+        let changed = apply_mihomo_override(yaml_path.to_str().unwrap(), &MihomoConfig::default())?;
+
+        assert!(!changed);
         Ok(())
     }
 

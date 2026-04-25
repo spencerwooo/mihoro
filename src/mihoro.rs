@@ -149,8 +149,13 @@ impl Mihoro {
         let config_path = Path::new(&self.mihomo_target_config_path);
         if !force && config_path.exists() {
             // Re-apply TOML overrides onto the cached YAML so user changes take effect.
-            apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
-            return Ok(StageStatus::Installed);
+            let changed =
+                apply_mihomo_override(&self.mihomo_target_config_path, &self.config.mihomo_config)?;
+            return if changed {
+                Ok(StageStatus::Installed)
+            } else {
+                Ok(StageStatus::Skipped("config already current".to_string()))
+            };
         }
 
         download_file(
@@ -833,6 +838,55 @@ mod tests {
         assert!(updated_content.contains("port: 9999"));
         assert!(updated_content.contains("socks-port: 9998"));
         assert!(updated_content.contains("proxies:"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_ensure_remote_config_skips_when_cached_config_is_current() -> Result<()> {
+        let dir = tempdir()?;
+        let config_path = dir.path().join("test.toml");
+        let yaml_path = dir.path().join("config.yaml");
+
+        let toml_content = r#"
+            remote_config_url = "http://example.com/config.yaml"
+            mihomo_binary_path = "/tmp/test/mihomo"
+            mihomo_config_root = "{}"
+            user_systemd_root = "/tmp/test/systemd"
+
+            [mihomo_config]
+            port = 9999
+            socks_port = 9998
+        "#;
+        fs::write(
+            &config_path,
+            toml_content.replace("{}", dir.path().to_str().unwrap()),
+        )?;
+
+        let yaml_content = r#"
+            port: 8080
+            socks-port: 8081
+            mode: rule
+            proxies:
+              - name: "test"
+                type: http
+                server: example.com
+                port: 443
+        "#;
+        fs::write(&yaml_path, yaml_content)?;
+
+        let mihoro = Mihoro::new(&config_path.to_str().unwrap().to_string())?;
+        apply_mihomo_override(yaml_path.to_str().unwrap(), &mihoro.config.mihomo_config)?;
+        let current_content = fs::read_to_string(&yaml_path)?;
+
+        let status = mihoro.ensure_remote_config(&Client::new(), false).await?;
+
+        match status {
+            StageStatus::Skipped(reason) => assert_eq!(reason, "config already current"),
+            StageStatus::Installed => panic!("expected remote config to be skipped"),
+            StageStatus::Failed(_) => panic!("ensure_remote_config returned a failed status"),
+        }
+        assert_eq!(fs::read_to_string(&yaml_path)?, current_content);
 
         Ok(())
     }
